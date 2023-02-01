@@ -43,10 +43,10 @@ def recibir_mensaje(cs):
     """
     pass
 
-
+#cs.shutdown podria ser nesario
 def cerrar_conexion(cs):
-    """ Esta función cierra una conexión activa.
-    """
+    cs.close()
+    print("Cerrando socket")
     pass
 
 
@@ -96,6 +96,15 @@ def process_web_request(cs, webroot):
             * Si es por timeout, se cierra el socket tras el período de persistencia.
                 * NOTA: Si hay algún error, enviar una respuesta de error con una pequeña página HTML que informe del error.
     """
+    rlist = [cs]
+    wlist = []
+    xlist = []
+    while(True):
+        rsublist, wsublist, xsublist = select.select(rlist, wlist, xlist,TIMEOUT_CONNECTION)
+        if rlist!= None:
+            sys.exit
+    
+
 
 
 def main():
@@ -126,8 +135,8 @@ def main():
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0) as sckt:
         
             #Permite reusar la misma dirección previamente vinculada a otro proceso. Debe ir antes de sock.bind
-            sckt.setsocktopt(sckt.SOL_SOCKET, sckt.SO_REUSEADDR)      
-        
+            sckt.setsocktopt(sckt.SOL_SOCKET, sckt.SO_REUSEADDR)  
+            
             #Vinculamos el socket a una IP y puerto elegidos
             sckt.bind((args.host, args.port))    
 
@@ -135,19 +144,24 @@ def main():
             #opcional backlog, probar con 64
             sckt.listen()
 
-        #Bucle infinito para mantener el servidor activo indefinidamente
-       
-            #- Aceptamos la conexión
+            #Bucle infinito para mantener el servidor activo indefinidamente
+        
+                #- Aceptamos la conexión
 
-            #- Creamos un proceso hijo
+                #- Creamos un proceso hijo
 
-            #- Si es el proceso hijo se cierra el socket del padre y procesar la petición con process_web_request()
+                #- Si es el proceso hijo se cierra el socket del padre y procesar la petición con process_web_request()
 
-            #- Si es el proceso padre cerrar el socket que gestiona el hijo.
+                #- Si es el proceso padre cerrar el socket que gestiona el hijo.
             while(True):
                 conn, addr = sckt.accept()
-             
 
+                if os.fork() == 0:
+                    cerrar_conexion(sckt, )
+                    process_web_request(conn,args.webroot)
+
+                else:
+                    cerrar_conexion(conn)
 
     except KeyboardInterrupt:
         True
