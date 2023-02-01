@@ -18,8 +18,6 @@ import logging      # Para imprimir logs
 BUFSIZE = 8192 # Tamaño máximo del buffer que se puede utilizar
 TIMEOUT_CONNECTION = 20 # Timout para la conexión persistente //cambiar a 5 seconds para hacer pruebas
 MAX_ACCESOS = 10
-ADDR = 9000
-PORT = "192.168.56.101" 
 
 # Extensiones admitidas (extension, name in HTTP)
 filetypes = {"gif":"image/gif", "jpg":"image/jpg", "jpeg":"image/jpeg", "png":"image/png", "htm":"text/htm", 
@@ -122,33 +120,32 @@ def main():
 
         logger.info("Serving files from {}".format(args.webroot))
 
-        """ Funcionalidad a realizar
-        * Crea un socket TCP (SOCK_STREAM)"""
+        #Funcionalidad a realizar
+        # Crea un socket TCP (SOCK_STREAM)
         
-        socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)   
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0) as sckt:
         
-       """ * Permite reusar la misma dirección previamente vinculada a otro proceso. Debe ir antes de sock.bind"""
-        socket.setsocktopt(socket.SOL_SOCKET, socket.SO_REUSEADDR)  
+        #Permite reusar la misma dirección previamente vinculada a otro proceso. Debe ir antes de sock.bind
+        sckt.setsocktopt(socket.SOL_SOCKET, socket.SO_REUSEADDR)  
         
-       """ * Vinculamos el socket a una IP y puerto elegidos""" 
+       #Vinculamos el socket a una IP y puerto elegidos
+        sckt.bind((args.host, args.port))    
+
+        #Escucha conexiones entrantes
+        #opcional backlog, probar con 64
+        sckt.listen()
+
+       #Bucle infinito para mantener el servidor activo indefinidamente
        
-       socket.bind((ADDR, PORT))   
+            #- Aceptamos la conexión
 
-        """* Escucha conexiones entrantes"""
-        """opcional backlog, probar con 64"""
-        socket.listen()
+            #- Creamos un proceso hijo
 
-       """ * Bucle infinito para mantener el servidor activo indefinidamente
-       
-            - Aceptamos la conexión
+            #- Si es el proceso hijo se cierra el socket del padre y procesar la petición con process_web_request()
 
-            - Creamos un proceso hijo
-
-            - Si es el proceso hijo se cierra el socket del padre y procesar la petición con process_web_request()
-
-            - Si es el proceso padre cerrar el socket que gestiona el hijo.
-        """
+            #- Si es el proceso padre cerrar el socket que gestiona el hijo.
         while(True):
+            conn, addr = sckt.accept()
              
 
 
