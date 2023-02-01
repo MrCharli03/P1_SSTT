@@ -125,17 +125,17 @@ def main():
         
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0) as sckt:
         
-        #Permite reusar la misma dirección previamente vinculada a otro proceso. Debe ir antes de sock.bind
-        sckt.setsocktopt(socket.SOL_SOCKET, socket.SO_REUSEADDR)  
+            #Permite reusar la misma dirección previamente vinculada a otro proceso. Debe ir antes de sock.bind
+            sckt.setsocktopt(sckt.SOL_SOCKET, sckt.SO_REUSEADDR)      
         
-       #Vinculamos el socket a una IP y puerto elegidos
-        sckt.bind((args.host, args.port))    
+            #Vinculamos el socket a una IP y puerto elegidos
+            sckt.bind((args.host, args.port))    
 
-        #Escucha conexiones entrantes
-        #opcional backlog, probar con 64
-        sckt.listen()
+            #Escucha conexiones entrantes
+            #opcional backlog, probar con 64
+            sckt.listen()
 
-       #Bucle infinito para mantener el servidor activo indefinidamente
+        #Bucle infinito para mantener el servidor activo indefinidamente
        
             #- Aceptamos la conexión
 
@@ -144,8 +144,8 @@ def main():
             #- Si es el proceso hijo se cierra el socket del padre y procesar la petición con process_web_request()
 
             #- Si es el proceso padre cerrar el socket que gestiona el hijo.
-        while(True):
-            conn, addr = sckt.accept()
+            while(True):
+                conn, addr = sckt.accept()
              
 
 
