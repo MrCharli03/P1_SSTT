@@ -18,8 +18,6 @@ import logging      # Para imprimir logs
 BUFSIZE = 8192 # Tamaño máximo del buffer que se puede utilizar
 TIMEOUT_CONNECTION = 20 # Timout para la conexión persistente //cambiar a 5 seconds para hacer pruebas
 MAX_ACCESOS = 10
-ADDR = 9000
-PORT = "192.168.56.101" 
 
 # Extensiones admitidas (extension, name in HTTP)
 filetypes = {"gif":"image/gif", "jpg":"image/jpg", "jpeg":"image/jpeg", "png":"image/png", "htm":"text/htm", 
@@ -45,11 +43,10 @@ def recibir_mensaje(cs):
     """
     pass
 
-
+#cs.shutdown podria ser nesario
 def cerrar_conexion(cs):
-    """ Esta función cierra una conexión activa.
-    """
-        
+    cs.close()
+    print("Cerrando socket")
     pass
 
 
@@ -99,6 +96,15 @@ def process_web_request(cs, webroot):
             * Si es por timeout, se cierra el socket tras el período de persistencia.
                 * NOTA: Si hay algún error, enviar una respuesta de error con una pequeña página HTML que informe del error.
     """
+    rlist = [cs]
+    wlist = []
+    xlist = []
+    while(True):
+        rsublist, wsublist, xsublist = select.select(rlist, wlist, xlist,TIMEOUT_CONNECTION)
+        if rlist!= None:
+            sys.exit
+    
+
 
 
 def main():
@@ -121,51 +127,41 @@ def main():
 
         logger.info('Enabling server in address {} and port {}.'.format(args.host, args.port))
 
-        logger.info("Serving files from {}".format(args.webroot)) 
+        logger.info("Serving files from {}".format(args.webroot))
 
-        """ Funcionalidad a realizar
-        * Crea un socket TCP (SOCK_STREAM)"""
+        #Funcionalidad a realizar
+        # Crea un socket TCP (SOCK_STREAM)
         
-        socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0) as sckt:
         
-        """ * Permite reusar la misma dirección previamente vinculada a otro proceso. Debe ir antes de sock.bind"""
-        socket.setsocktopt(socket.SOL_SOCKET, socket.SO_REUSEADDR)  
+            #Permite reusar la misma dirección previamente vinculada a otro proceso. Debe ir antes de sock.bind
+            sckt.setsocktopt(sckt.SOL_SOCKET, sckt.SO_REUSEADDR)  
+            
+            #Vinculamos el socket a una IP y puerto elegidos
+            sckt.bind((args.host, args.port))    
+
+            #Escucha conexiones entrantes
+            #opcional backlog, probar con 64
+            sckt.listen()
+
+            #Bucle infinito para mantener el servidor activo indefinidamente
         
-        """ * Vinculamos el socket a una IP y puerto elegidos""" 
-       
-        socket.bind((ADDR, PORT))   
+                #- Aceptamos la conexión
 
-        """* Escucha conexiones entrantes"""
-        """opcional backlog, probar con 64"""
-        socket.listen()
+                #- Creamos un proceso hijo
 
-        """ * Bucle infinito para mantener el servidor activo indefinidamente
-       
-            - Aceptamos la conexión
+                #- Si es el proceso hijo se cierra el socket del padre y procesar la petición con process_web_request()
 
-            - Creamos un proceso hijo
+                #- Si es el proceso padre cerrar el socket que gestiona el hijo.
+            while(True):
+                conn, addr = sckt.accept()
 
-            - Si es el proceso hijo se cierra el socket del padre y procesar la petición con process_web_request()
+                if os.fork() == 0:
+                    cerrar_conexion(sckt, )
+                    process_web_request(conn,args.webroot)
 
-            - Si es el proceso padre cerrar el socket que gestiona el hijo.
-        """
-    while(True):
-        conn, addr = socket.accept()
-
-        if os.fork() == 0:
-            cerrar_conexion(socket)
-            process_web_request(conn)
-
-        else:
-            cerrar_conexion(conn)
-
-
-        
-
-
-        
-             
-
+                else:
+                    cerrar_conexion(conn)
 
     except KeyboardInterrupt:
         True
