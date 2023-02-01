@@ -127,18 +127,18 @@ def main():
         
         socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)   
         
-       """ * Permite reusar la misma dirección previamente vinculada a otro proceso. Debe ir antes de sock.bind"""
+        """ * Permite reusar la misma dirección previamente vinculada a otro proceso. Debe ir antes de sock.bind"""
         socket.setsocktopt(socket.SOL_SOCKET, socket.SO_REUSEADDR)  
         
-       """ * Vinculamos el socket a una IP y puerto elegidos""" 
+        """ * Vinculamos el socket a una IP y puerto elegidos""" 
        
-       socket.bind((ADDR, PORT))   
+        socket.bind((ADDR, PORT))   
 
         """* Escucha conexiones entrantes"""
         """opcional backlog, probar con 64"""
         socket.listen()
 
-       """ * Bucle infinito para mantener el servidor activo indefinidamente
+        """ * Bucle infinito para mantener el servidor activo indefinidamente
        
             - Aceptamos la conexión
 
@@ -148,7 +148,8 @@ def main():
 
             - Si es el proceso padre cerrar el socket que gestiona el hijo.
         """
-        while(True):
+    while(True):
+        #Prueba primer comit
              
 
 
