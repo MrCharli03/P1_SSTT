@@ -49,6 +49,7 @@ def recibir_mensaje(cs):
 def cerrar_conexion(cs):
     """ Esta función cierra una conexión activa.
     """
+        
     pass
 
 
@@ -120,12 +121,12 @@ def main():
 
         logger.info('Enabling server in address {} and port {}.'.format(args.host, args.port))
 
-        logger.info("Serving files from {}".format(args.webroot))
+        logger.info("Serving files from {}".format(args.webroot)) 
 
         """ Funcionalidad a realizar
         * Crea un socket TCP (SOCK_STREAM)"""
         
-        socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)   
+        socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
         
         """ * Permite reusar la misma dirección previamente vinculada a otro proceso. Debe ir antes de sock.bind"""
         socket.setsocktopt(socket.SOL_SOCKET, socket.SO_REUSEADDR)  
@@ -149,7 +150,20 @@ def main():
             - Si es el proceso padre cerrar el socket que gestiona el hijo.
         """
     while(True):
-        #Prueba primer comit
+        conn, addr = socket.accept()
+
+        if os.fork() == 0:
+            cerrar_conexion(socket)
+            process_web_request(conn)
+
+        else:
+            cerrar_conexion(conn)
+
+
+        
+
+
+        
              
 
 
