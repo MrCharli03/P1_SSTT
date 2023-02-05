@@ -50,7 +50,7 @@ def cerrar_conexion(cs):
     print("Cerrando socket")
     pass
 
-
+# Para que sirve cs en esta función
 def process_cookies(headers,  cs):
     """ Esta función procesa la cookie cookie_counter
         1. Se analizan las cabeceras en headers para buscar la cabecera Cookie
@@ -59,6 +59,19 @@ def process_cookies(headers,  cs):
         4. Si se encuentra y tiene el valor MAX_ACCESSOS se devuelve MAX_ACCESOS
         5. Si se encuentra y tiene un valor 1 <= x < MAX_ACCESOS se incrementa en 1 y se devuelve el valor
     """
+
+    for head in headers[1:]:
+        if not head:
+            break
+        if "Cookie" in headers:
+            cookie_counter = int(headers["Cookie"].split("=")[1])
+            if not cookie_counter:
+                return 1
+            elif cookie_counter == MAX_ACCESOS:
+                return MAX_ACCESOS
+            elif (cookie_counter >= 1) & (cookie_counter < MAX_ACCESOS):
+                cookie_counter+=1
+                return cookie_counter
     pass
 
 
@@ -70,86 +83,91 @@ def process_web_request(cs, webroot):
     wlist = []
     xlist = []
 
-        # Bucle para esperar hasta que lleguen datos en la red a través del socket cs con select()
-        while(True):
+    # Bucle para esperar hasta que lleguen datos en la red a través del socket cs con select()
+    while(True):
         
-            # Se comprueba si hay que cerrar la conexión por exceder TIMEOUT_CONNECTION segundos
-              # sin recibir ningún mensaje o hay datos. Se utiliza select.select
-            rsublist, wsublist, xsublist = select.select(rlist, wlist, xlist,TIMEOUT_CONNECTION)
+        # Se comprueba si hay que cerrar la conexión por exceder TIMEOUT_CONNECTION segundos
+          # sin recibir ningún mensaje o hay datos. Se utiliza select.select
+        rsublist, wsublist, xsublist = select.select(rlist, wlist, xlist,TIMEOUT_CONNECTION)
 
-            #* Si no es por timeout y hay datos en el socket cs.
-            if rsublist:
-                #* Leer los datos con recv.
-                data = recibir_mensaje(cs)  
-                if not data:
-                    cerrar_conexion(cs)   
+        #* Si no es por timeout y hay datos en el socket cs.
+        if rsublist:
+            #* Leer los datos con recv.
+            data = recibir_mensaje(cs)  
+            if not data:
+                cerrar_conexion(cs)   
+                break   
+
+            #* Analizar que la línea de solicitud y comprobar está bien formateada según HTTP 1.1
+                #* Devuelve una lista con los atributos de las cabeceras.
+                lines = data.split("\r\n")  
+                content_atributes = lines[0].split(" ") 
+
+                #* Comprobar si la versión de HTTP es 1.1
+                if content_atributes[2] != "HTTP/1.1":
+                    return "Error 505 HTTP Version Not Supported"
                     break   
-
-                #* Analizar que la línea de solicitud y comprobar está bien formateada según HTTP 1.1
-                    #* Devuelve una lista con los atributos de las cabeceras.
-                    lines = data.split("\r\n")  
-                    content_atributes = lines[0].split(" ") 
-
-                    #* Comprobar si la versión de HTTP es 1.1
-                    if content_atributes[2] != "HTTP/1.1":
-                        return "Error 505 HTTP Version Not Supported"
-                        break   
                     
-                    #* Comprobar si es un método GET. Si no devolver un error Error 405 "Method Not Allowed".
-                    if content_atributes[0] != "GET":
-                        return "Error 405 Method Not Allowed"
+                #* Comprobar si es un método GET. Si no devolver un error Error 405 "Method Not Allowed".
+                if content_atributes[0] != "GET":
+                    return "Error 405 Method Not Allowed"
+                    break
+
+                #* Leer URL y eliminar parámetros si los hubiera  
+                url = content_atributes[1].split("?")[0]
+
+                #* Comprobar si el recurso solicitado es /, En ese caso el recurso es index.html
+                if url == "/":  
+                    url = "/index.html" 
+
+                #* Construir la ruta absoluta del recurso (webroot + recurso solicitado)
+                abs_route = webroot + url   
+                #* Comprobar que el recurso (fichero) existe, si no devolver Error 404 "Not found"
+                if not os.path.isfile(abs_route):
+                    return "Error 404: Not found"
+                #* Analizar las cabeceras. Imprimir cada cabecera y su valor. Si la cabecera es Cookie comprobar
+                #  el valor de cookie_counter para ver si ha llegado a MAX_ACCESOS.
+
+                for line in lines[1:]:
+                    if not line:
                         break
-
-                    #* Leer URL y eliminar parámetros si los hubiera  
-                    url = content_atributes[1].split("?")[0]
-
-                    #* Comprobar si el recurso solicitado es /, En ese caso el recurso es index.html
-                    if url == "/":  
-                        url = "/index.html" 
-
-                    #* Construir la ruta absoluta del recurso (webroot + recurso solicitado)
-                    abs_route = webroot + url   
-                    #* Comprobar que el recurso (fichero) existe, si no devolver Error 404 "Not found"
-                    if not os.path.isfile(abs_route):
-                        return "Error 404: Not found"
-                    #* Analizar las cabeceras. Imprimir cada cabecera y su valor. Si la cabecera es Cookie comprobar
-                    for line in lines[1:]:
-                        if not line:
-                            break
-                        cabecera = line.split(": ") 
-                        cabeceras[cabecera[0]] = cabecera[1]    
-                    #  el valor de cookie_counter para ver si ha llegado a MAX_ACCESOS.
-                        if "Cookie" in cabeceras:
-                            cont_cookie = int(cabeceras["Cookie"].split("=")[1])
-                            #  Si se ha llegado a MAX_ACCESOS devolver un Error "403 Forbidden"  
-                            if cont_cookie >= MAX_ACCESOS:
-                                return "Error 403: Forbidden"                       
+                    cabecera = line.split(": ") 
+                    cabeceras[cabecera[0]] = cabecera[1]
                     
-                    #* Obtener el tamaño del recurso en bytes.
-                    size = os.stat(abs_route).st_size   
-                    #* Extraer extensión para obtener el tipo de archivo. Necesario para la cabecera Content-Type
-                    extension = abs_route.split(".")[1]
-                    #* Preparar respuesta con código 200. Construir una respuesta que incluya: la línea de respuesta y
-                    #las cabeceras Date, Server, Connection, Set-Cookie (para la cookie cookie_counter),
-                    #Content-Length y Content-Type.
-                    respuesta = "HTTP/1.1 200 OK\r\n"
-                    respuesta += "Date: {}\r\n".format(datetime.now().strftime("%a, %d %b %Y %H:%M:%S GMT"))
-                    respuesta += "Server: Apache200\r\n"
-                    respuesta += "Connection: close\r\n"
-                    respuesta += "Set-Cookie: cookie_counter={}\r\n".format(cookie_counter + 1)
-                    respuesta += "Content-Length: {}\r\n".format(resource_size)
-                    respuesta += "Content-Type: {}\r\n".format(get_content_type(resource_extension))
-                    respuesta += "\r\n"
-                    #* Leer y enviar el contenido del fichero a retornar en el cuerpo de la respuesta.
-                    #* Se abre el fichero en modo lectura y modo binario
-                        #* Se lee el fichero en bloques de BUFSIZE bytes (8KB)
-                        #* Cuando ya no hay más información para leer, se corta el bucle
+                    if "Cookie" in cabeceras:
+                        cookie_counter=process_cookies(cabezeras, cs)    
+                        #  Si se ha llegado a MAX_ACCESOS devolver un Error "403 Forbidden"  
+                        
+                        #TODO Este cookicounter puede tener un valor distito al esperado
+                        if cookie_counter >= MAX_ACCESOS:
+                            return "Error 403: Forbidden"                       
+                    
+                #* Obtener el tamaño del recurso en bytes.
+                size = os.stat(abs_route).st_size   
+                #* Extraer extensión para obtener el tipo de archivo. Necesario para la cabecera Content-Type
+                extension = abs_route.split(".")[1]
+                #* Preparar respuesta con código 200. Construir una respuesta que incluya: la línea de respuesta y
+                #las cabeceras Date, Server, Connection, Set-Cookie (para la cookie cookie_counter),
+                #Content-Length y Content-Type.
+                respuesta = "HTTP/1.1 200 OK\r\n"
+                respuesta += "Date: {}\r\n".format(datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT"))
+                respuesta += "Server:{}\r\n".format(os.name) 
+                respuesta += "Connection: close\r\n"
+                respuesta += "Set-Cookie: cookie_counter={}\r\n".format(cookie_counter + 1)
+                respuesta += "Content-Length: {}\r\n".format(resource_size)
+                respuesta += "Content-Type: {}\r\n".format(get_content_type(resource_extension))
+                respuesta += "\r\n"
+                #* Leer y enviar el contenido del fichero a retornar en el cuerpo de la respuesta.
 
-            #* Si es por timeout, se cierra el socket tras el período de persistencia.
-            else:
-                #* NOTA: Si hay algún error, enviar una respuesta de error con una pequeña página HTML que informe del error.
-                cerrar_conexion(cs)
-                break
+                #* Se abre el fichero en modo lectura y modo binario
+                    #* Se lee el fichero en bloques de BUFSIZE bytes (8KB)
+                    #* Cuando ya no hay más información para leer, se corta el bucle
+
+        #* Si es por timeout, se cierra el socket tras el período de persistencia.
+        else:
+            #* NOTA: Si hay algún error, enviar una respuesta de error con una pequeña página HTML que informe del error.
+            cerrar_conexion(cs)
+            break
                 
     
 
