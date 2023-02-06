@@ -34,6 +34,8 @@ def enviar_mensaje(cs, data):
     """ Esta función envía datos (data) a través del socket cs
         Devuelve el número de bytes enviados.
     """
+    data.encode()
+    data.send()
     pass
 
 
@@ -138,7 +140,6 @@ def process_web_request(cs, webroot):
                         cookie_counter=process_cookies(cabezeras, cs)    
                         #  Si se ha llegado a MAX_ACCESOS devolver un Error "403 Forbidden"  
                         
-                        #TODO Este cookicounter puede tener un valor distito al esperado
                         if cookie_counter >= MAX_ACCESOS:
                             return "Error 403: Forbidden"                       
                     
@@ -158,17 +159,23 @@ def process_web_request(cs, webroot):
                 respuesta += "Content-Type: {}\r\n".format(get_content_type(resource_extension))
                 respuesta += "\r\n"
                 #* Leer y enviar el contenido del fichero a retornar en el cuerpo de la respuesta.
-
                 #* Se abre el fichero en modo lectura y modo binario
                     #* Se lee el fichero en bloques de BUFSIZE bytes (8KB)
                     #* Cuando ya no hay más información para leer, se corta el bucle
+                with open(abs_route, 'rb') as f:
+                    while(True):
+                        if f.read(BUFSIZE)== '':
+                            break
+                        contenido += f.read(BUFSIZE)
+                respuesta+=contenido
+                enviar_mensaje(cs,respuesta)
 
         #* Si es por timeout, se cierra el socket tras el período de persistencia.
         else:
             #* NOTA: Si hay algún error, enviar una respuesta de error con una pequeña página HTML que informe del error.
             cerrar_conexion(cs)
             break
-                
+        
     
 
 
