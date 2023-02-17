@@ -57,7 +57,7 @@ def cerrar_conexion(cs):
 # Para que sirve cs en esta función
 
 
-def process_cookies(headers,  cs):
+def process_cookies(headers):
     """ Esta función procesa la cookie cookie_counter
         1. Se analizan las cabeceras en headers para buscar la cabecera Cookie
         2. Una vez encontrada una cabecera Cookie se comprueba si el valor es cookie_counter
@@ -66,18 +66,15 @@ def process_cookies(headers,  cs):
         5. Si se encuentra y tiene un valor 1 <= x < MAX_ACCESOS se incrementa en 1 y se devuelve el valor
     """
 
-    for head in headers[1:]:
-        if not head:
-            break
-        if "Cookie" in headers:
-            cookie_counter = int(headers["Cookie"].split("=")[1])
-            if not cookie_counter:
-                return 1
-            elif cookie_counter == MAX_ACCESOS:
-                return MAX_ACCESOS
-            elif (cookie_counter >= 1) & (cookie_counter < MAX_ACCESOS):
-                cookie_counter += 1
-                return cookie_counter
+    if "Cookie" in headers:
+        cookie_counter = int(headers.get('Cookie'))
+        if not cookie_counter:
+            return 1
+        elif cookie_counter == MAX_ACCESOS:
+            return MAX_ACCESOS
+        elif (cookie_counter >= 1) & (cookie_counter < MAX_ACCESOS):
+            cookie_counter += 1
+            return cookie_counter
     pass
 
 
@@ -137,10 +134,11 @@ def process_web_request(cs, webroot):
                 if not line:
                     break
                 cabecera = line.split(": ")
-                cabeceras[cabecera[0]] = cabecera[1]
+                cabeceras = {cabecera[0] : cabecera[1]}
+
 
                 if "Cookie" in cabeceras:
-                    cookie_counter = process_cookies(cabezeras, cs)
+                    cookie_counter = process_cookies(cabeceras)
                     #  Si se ha llegado a MAX_ACCESOS devolver un Error "403 Forbidden"
                     if cookie_counter >= MAX_ACCESOS:
                         return "Error 403: Forbidden"
@@ -157,10 +155,9 @@ def process_web_request(cs, webroot):
                     datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT"))
                 respuesta += "Server:{}\r\n".format(os.name)
                 respuesta += "Connection: close\r\n"
-                respuesta += "Set-Cookie: cookie_counter={}\r\n".format(cookie_counter + 1)
-                respuesta += "Content-Length: {}\r\n".format(resource_size)
-                respuesta += "Content-Type: {}\r\n".format(
-                    get_content_type(resource_extension))
+                respuesta += "Set-Cookie: cookie_counter={}\r\n".format(cookie_counter)
+                respuesta += "Content-Length: {}\r\n".format(size)
+                respuesta += "Content-Type: {}\r\n".format(filetypes.get(extension))
                 respuesta += "\r\n"
                 # * Leer y enviar el contenido del fichero a retornar en el cuerpo de la respuesta.
                 # * Se abre el fichero en modo lectura y modo binario
@@ -235,14 +232,15 @@ def main():
             # - Si es el proceso padre cerrar el socket que gestiona el hijo.
             while (True):
                 conn, addr = sckt.accept()
-                if os.fork() == 0:
+                '''if os.fork() == 0:
                     print('hijo')
                     cerrar_conexion(sckt, )
                     process_web_request(conn, args.webroot)
 
                 else:
                     print('padre')
-                    cerrar_conexion(conn)
+                    cerrar_conexion(conn)'''
+                process_web_request(conn, args.webroot)
 
     except KeyboardInterrupt:
         True
