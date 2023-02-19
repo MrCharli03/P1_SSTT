@@ -140,34 +140,34 @@ def process_web_request(cs, webroot):
                         if cookie_counter >= MAX_ACCESOS:
                             return "Error 403: Forbidden"
                 ''' 
-                # * Obtener el tamaño del recurso en bytes.
-                size = os.stat(abs_route).st_size
-                # * Extraer extensión para obtener el tipo de archivo. Necesario para la cabecera Content-Type
-                extension = abs_route.split(".")[1]
-                # * Preparar respuesta con código 200. Construir una respuesta que incluya: la línea de respuesta y
-                # las cabeceras Date, Server, Connection, Set-Cookie (para la cookie cookie_counter),
-                # Content-Length y Content-Type.
-                respuesta = "HTTP/1.1 200 OK\r\n"
-                respuesta += "Date: {}\r\n".format(
-                    datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT"))
-                respuesta += "Server:{}\r\n".format(os.name)
-                respuesta += "Connection: close\r\n"
-                #respuesta += "Set-Cookie: cookie_counter={}\r\n".format(cookie_counter)
-                respuesta += "Content-Length: {}\r\n".format(size)
-                respuesta += "Content-Type: {}\r\n".format(filetypes.get(extension))
-                respuesta += "\r\n"
-                # * Leer y enviar el contenido del fichero a retornar en el cuerpo de la respuesta.
-                # * Se abre el fichero en modo lectura y modo binario
-                # * Se lee el fichero en bloques de BUFSIZE bytes (8KB)
-                # * Cuando ya no hay más información para leer, se corta el bucle
-                
-                with open(abs_route, 'rb') as f:
-                    while True:
-                        data = f.read(BUFSIZE)
-                        if not data:
-                            break
-                        contenido = respuesta.encode() + data 
-                        enviar_mensaje(cs, contenido)
+            # * Obtener el tamaño del recurso en bytes.
+            size = os.stat(abs_route).st_size
+            # * Extraer extensión para obtener el tipo de archivo. Necesario para la cabecera Content-Type
+            extension = abs_route.split(".")[1]
+            # * Preparar respuesta con código 200. Construir una respuesta que incluya: la línea de respuesta y
+            # las cabeceras Date, Server, Connection, Set-Cookie (para la cookie cookie_counter),
+            # Content-Length y Content-Type.
+            respuesta = "HTTP/1.1 200 OK\r\n"
+            respuesta += "Date: {}\r\n".format(
+                datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT"))
+            respuesta += "Server:{}\r\n".format(os.name)
+            respuesta += "Connection: close\r\n"
+            #respuesta += "Set-Cookie: cookie_counter={}\r\n".format(cookie_counter)
+            respuesta += "Content-Length: {}\r\n".format(size)
+            respuesta += "Content-Type: {}\r\n".format(filetypes.get(extension))
+            respuesta += "\r\n"
+            # * Leer y enviar el contenido del fichero a retornar en el cuerpo de la respuesta.
+            # * Se abre el fichero en modo lectura y modo binario
+            # * Se lee el fichero en bloques de BUFSIZE bytes (8KB)
+            # * Cuando ya no hay más información para leer, se corta el bucle
+            
+            with open(abs_route, 'rb') as f:
+                while True:
+                    data = f.read(BUFSIZE)
+                    if not data:
+                        break
+                    contenido = respuesta.encode() + data 
+                    enviar_mensaje(cs, contenido)
 
         # * Si es por timeout, se cierra el socket tras el período de persistencia.
         else:
