@@ -178,8 +178,6 @@ def process_web_request(cs, webroot):
 def main():
     """ Función principal del servidor
     """
-
-    
     try:
 
         # Argument parser para obtener la ip y puerto de los parámetros de ejecución del programa. IP por defecto 0.0.0.0
