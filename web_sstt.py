@@ -65,7 +65,7 @@ def process_cookies(headers):
     """
 
     if "Cookie" in headers:
-        cookie_counter = int(headers.get('Cookie'))
+        cookie_counter = int(headers.split('=')[1])
         if not cookie_counter:
             return 1
         elif cookie_counter == MAX_ACCESOS:
@@ -132,14 +132,13 @@ def process_web_request(cs, webroot):
                     break
                 cabecera = line.split(": ")
                 cabeceras = {cabecera[0] : cabecera[1]}
-
-                '''    
-                    if "Cookie" in cabeceras:
-                        cookie_counter = process_cookies(cabeceras)
-                        #  Si se ha llegado a MAX_ACCESOS devolver un Error "403 Forbidden"
-                        if cookie_counter >= MAX_ACCESOS:
-                            return "Error 403: Forbidden"
-                ''' 
+            cookie_counter=0      
+            if "Cookie" in cabeceras:
+                cookie_counter = process_cookies(cabeceras)
+                #  Si se ha llegado a MAX_ACCESOS devolver un Error "403 Forbidden"
+                if cookie_counter >= MAX_ACCESOS:
+                    return "Error 403: Forbidden"
+            
             # * Obtener el tamaño del recurso en bytes.
             size = os.stat(abs_route).st_size
             # * Extraer extensión para obtener el tipo de archivo. Necesario para la cabecera Content-Type
@@ -148,11 +147,10 @@ def process_web_request(cs, webroot):
             # las cabeceras Date, Server, Connection, Set-Cookie (para la cookie cookie_counter),
             # Content-Length y Content-Type.
             respuesta = "HTTP/1.1 200 OK\r\n"
-            respuesta += "Date: {}\r\n".format(
-                datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT"))
+            respuesta += "Date: {}\r\n".format(datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT"))
             respuesta += "Server:{}\r\n".format(os.name)
             respuesta += "Connection: close\r\n"
-            #respuesta += "Set-Cookie: cookie_counter={}\r\n".format(cookie_counter)
+            respuesta += "Set-Cookie: cookie_counter={}\r\n".format(cookie_counter)
             respuesta += "Content-Length: {}\r\n".format(size)
             respuesta += "Content-Type: {}\r\n".format(filetypes.get(extension))
             respuesta += "\r\n"
