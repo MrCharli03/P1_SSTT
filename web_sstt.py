@@ -63,7 +63,24 @@ def process_cookies(headers):
         4. Si se encuentra y tiene el valor MAX_ACCESSOS se devuelve MAX_ACCESOS
         5. Si se encuentra y tiene un valor 1 <= x < MAX_ACCESOS se incrementa en 1 y se devuelve el valor
     """
-
+    
+    cookie_value = None
+    if "Cookie" in headers:
+        cookie = headers["Cookie"]
+        cookie_list = cookie.split("; ")
+        for item in cookie_list:
+            if "cookie_counter" in item:
+                cookie_value = int(item.split("=")[1])
+                break
+    if cookie_value is None:
+        return 1
+    elif cookie_value == MAX_ACCESOS:
+        return MAX_ACCESOS
+    elif cookie_value < MAX_ACCESOS:
+        cookie_value += 1
+        return cookie_value
+    
+    '''
     if "Cookie" in headers:
         cookie_counter = int(headers.split('=')[1])
         print("valor de cookie counter =",cookie_counter)   
@@ -75,7 +92,8 @@ def process_cookies(headers):
             cookie_counter += 1
             return cookie_counter
     pass
-
+    '''
+    
 
 def process_web_request(cs, webroot):
     """ Procesamiento principal de los mensajes recibidos.
@@ -133,12 +151,11 @@ def process_web_request(cs, webroot):
                     break
                 cabecera = line.split(": ")
                 cabeceras = {cabecera[0] : cabecera[1]}
-            cookie_counter=0      
-            if "Cookie" in cabeceras:
-                cookie_counter = process_cookies(cabeceras)
-                #  Si se ha llegado a MAX_ACCESOS devolver un Error "403 Forbidden"
-                if cookie_counter >= MAX_ACCESOS:
-                    return "Error 403: Forbidden"
+                
+            cookie_counter = process_cookies(cabeceras)     
+            #  Si se ha llegado a MAX_ACCESOS devolver un Error "403 Forbidden"
+            if cookie_counter >= MAX_ACCESOS:
+                return "Error 403: Forbidden"
             
             # * Obtener el tamaño del recurso en bytes.
             size = os.stat(abs_route).st_size
