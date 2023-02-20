@@ -66,6 +66,7 @@ def process_cookies(headers):
 
     if "Cookie" in headers:
         cookie_counter = int(headers.split('=')[1])
+        print("valor de cookie counter =",cookie_counter)   
         if not cookie_counter:
             return 1
         elif cookie_counter == MAX_ACCESOS:
@@ -159,14 +160,22 @@ def process_web_request(cs, webroot):
             # * Se lee el fichero en bloques de BUFSIZE bytes (8KB)
             # * Cuando ya no hay más información para leer, se corta el bucle
             
-            with open(abs_route, 'rb') as f:
-                while True:
-                    data = f.read(BUFSIZE)
-                    if not data:
-                        break
-                    contenido = respuesta.encode() + data 
-                    enviar_mensaje(cs, contenido)
-
+            if (os.stat(abs_route).st_size + len(respuesta) > BUFSIZE):
+                #Envio con fragmentacion
+                enviar_mensaje(cs, respuesta.encode())
+                with open(abs_route, "rb") as f:
+                    while (True):
+                        buff = f.read(BUFSIZE)
+                        if(not buff):
+                            break
+                        enviar_mensaje(cs, buff)
+            else:
+                #Envio normal
+                with open(abs_route, "rb") as f:    
+                    buff = f.read() 
+                    contenido = respuesta.encode() + buff 
+                    enviar_mensaje(cs, contenido) 
+           
         # * Si es por timeout, se cierra el socket tras el período de persistencia.
         else:
             # * NOTA: Si hay algún error, enviar una respuesta de error con una pequeña página HTML que informe del error.
