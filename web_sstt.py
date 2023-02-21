@@ -18,6 +18,7 @@ BUFSIZE = 8192  # Tamaño máximo del buffer que se puede utilizar
 # Timout para la conexión persistente //cambiar a 5 seconds para hacer pruebas
 TIMEOUT_CONNECTION = 20
 MAX_ACCESOS = 10
+BACKLOG = 64
 
 # Extensiones admitidas (extension, name in HTTP)
 filetypes = {"gif": "image/gif", "jpg": "image/jpg", "jpeg": "image/jpeg", "png": "image/png", "htm": "text/htm",
@@ -49,10 +50,16 @@ def recibir_mensaje(cs):
 
 def cerrar_conexion(cs):
     cs.close()
-    print("Cerrando socket")
     pass
 
-# Para que sirve cs en esta función
+def enviar_recurso(ruta, tam, cabecera, cs):
+    '''Esta funcion envia un recurso hacia el cliente teniendo en cuenta el
+    tamaño del mismo.
+    '''
+
+
+
+
 
 
 def process_cookies(headers):
@@ -150,7 +157,7 @@ def process_web_request(cs, webroot):
             respuesta += "Date: {}\r\n".format(datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT"))
             respuesta += "Server:{}\r\n".format(os.name)
             respuesta += "Connection: close\r\n"
-            respuesta += "Set-Cookie: cookie_counter={}\r\n".format(cookie_counter)
+            #respuesta += "Set-Cookie: cookie_counter={}\r\n".format(cookie_counter)
             respuesta += "Content-Length: {}\r\n".format(size)
             respuesta += "Content-Type: {}\r\n".format(filetypes.get(extension))
             respuesta += "\r\n"
@@ -160,20 +167,23 @@ def process_web_request(cs, webroot):
             # * Cuando ya no hay más información para leer, se corta el bucle
             
             with open(abs_route, 'rb') as f:
-                while True:
-                    data = f.read(BUFSIZE)
-                    if not data:
-                        break
-                    contenido = respuesta.encode() + data 
-                    enviar_mensaje(cs, contenido)
+                    if(size + len(cabecera) <= BUFSIZE):
+                        datos = f.read(BUFSIZE)
+                        contenido = respuesta.encode() + datos
+                        enviar_mensaje(cs, contenido)
+                    else:
+                        enviar_mensaje(cs, respuesta.encode())
+                        while True:
+                            datos = f.read(BUFSIZE)
+                            if not datos:
+                                break
+                            enviar_mensaje(cs, datos)
 
         # * Si es por timeout, se cierra el socket tras el período de persistencia.
         else:
             # * NOTA: Si hay algún error, enviar una respuesta de error con una pequeña página HTML que informe del error.
             cerrar_conexion(cs)
             break
-
-    print("msg enviados")   
 
 def main():
     """ Función principal del servidor
@@ -203,7 +213,6 @@ def main():
         # Funcionalidad a realizar
         # Crea un socket TCP (SOCK_STREAM)
 
-        print('hola')
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0) as sckt:
 
             # Permite reusar la misma dirección previamente vinculada a otro proceso. Debe ir antes de sock.bind
@@ -213,8 +222,8 @@ def main():
             sckt.bind((args.host, args.port))
 
             # Escucha conexiones entrantes
-            # opcional backlog, probar con 64
-            sckt.listen()
+         
+            sckt.listen(BACKLOG)
 
             # Bucle infinito para mantener el servidor activo indefinidamente
 
@@ -228,12 +237,10 @@ def main():
             while (True):
                 conn, addr = sckt.accept()
                 '''if os.fork() == 0:
-                    print('hijo')
                     cerrar_conexion(sckt, )
                     process_web_request(conn, args.webroot)
 
                 else:
-                    print('padre')
                     cerrar_conexion(conn)'''
                 process_web_request(conn, args.webroot)
 
