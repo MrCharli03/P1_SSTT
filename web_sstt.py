@@ -73,17 +73,14 @@ def process_cookies(headers):
     # Fecha de Expiración de la cookie
     fecha_expiracion = tiempo_actual + MAX_AGE
 
-    cookie_value = -1
+    cookie_value = 0
     if "Cookie" in headers:
-        print("cookie entro"+"\n") 
         cookie = headers["Cookie"]
         cookie_list = cookie.split("; ")
         for item in cookie_list:
             if "cookie_counter" in item:
-                cookie_value = int(item.split("=",maxsplit=-1)[1])
-                
+                cookie_value = int(item.split("=")[1])
                 break
-             
     elif cookie_value is None:
         return 1
     elif tiempo_actual > fecha_expiracion:
@@ -93,7 +90,8 @@ def process_cookies(headers):
         return MAX_ACCESOS
     elif cookie_value < MAX_ACCESOS:
         cookie_value += 1
-        return cookie_value  
+        return cookie_value
+       
     '''
     if "Cookie" in headers:
         cookie_counter = int(headers.split('=')[1])
@@ -102,11 +100,9 @@ def process_cookies(headers):
             return 1
         elif cookie_counter == MAX_ACCESOS:
             return MAX_ACCESOS
-        elif (cookie_counter >= 1) & (cookie_counter < MAX_ACCESOS):
-            cookie_counter += 1
-            return cookie_counter
-    pass
-    '''
+        else:
+            cookie_value += 1
+            return cookie_value
 
 def process_web_request(cs, webroot):
     """ Procesamiento principal de los mensajes recibidos.
@@ -156,17 +152,14 @@ def process_web_request(cs, webroot):
             # * Comprobar que el recurso (fichero) existe, si no devolver Error 404 "Not found"
             if not os.path.isfile(abs_route):
                 return "Error 404: Not found"
-        
-            # * Analizar las cabeceras. Imprimir cada cabecera y su valor. Si la cabecera es Cookie comprobar
-            #  el valor de cookie_counter para ver si ha llegado a MAX_ACCESOS.
+                # * Analizar las cabeceras. Imprimir cada cabecera y su valor. Si la cabecera es Cookie comprobar
+                #  el valor de cookie_counter para ver si ha llegado a MAX_ACCESOS.
 
             for line in lines[1:]:
                 if not line:
                     break
                 cabecera = line.split(": ")
                 cabeceras = {cabecera[0] : cabecera[1]}
-                
-            print(cabeceras)
                 
             cookie_counter = process_cookies(cabeceras)
                
@@ -264,7 +257,7 @@ def main():
             # - Si es el proceso padre cerrar el socket que gestiona el hijo.
             while (True):
                 conn, addr = sckt.accept()
-                '''if os.fork() == 0:
+                '''  if os.fork() == 0:
                     cerrar_conexion(sckt, )
                     process_web_request(conn, args.webroot)
 
