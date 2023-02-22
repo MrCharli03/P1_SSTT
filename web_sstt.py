@@ -19,6 +19,8 @@ BUFSIZE = 8192  # Tamaño máximo del buffer que se puede utilizar
 TIMEOUT_CONNECTION = 20
 MAX_ACCESOS = 10
 BACKLOG = 64
+MAX_AGE = 5 
+
 
 # Extensiones admitidas (extension, name in HTTP)
 filetypes = {"gif": "image/gif", "jpg": "image/jpg", "jpeg": "image/jpeg", "png": "image/png", "htm": "text/htm",
@@ -57,11 +59,6 @@ def enviar_recurso(ruta, tam, cabecera, cs):
     tamaño del mismo.
     '''
 
-
-
-
-
-
 def process_cookies(headers):
     """ Esta función procesa la cookie cookie_counter
         1. Se analizan las cabeceras en headers para buscar la cabecera Cookie
@@ -70,8 +67,13 @@ def process_cookies(headers):
         4. Si se encuentra y tiene el valor MAX_ACCESSOS se devuelve MAX_ACCESOS
         5. Si se encuentra y tiene un valor 1 <= x < MAX_ACCESOS se incrementa en 1 y se devuelve el valor
     """
-    
-    cookie_value = 0 
+
+    tiempo_actual = time.time()
+
+    # Fecha de Expiración de la cookie
+    fecha_expiracion = tiempo_actual + MAX_AGE
+
+    cookie_value = 0
     if "Cookie" in headers:
         cookie = headers["Cookie"]
         cookie_list = cookie.split("; ")
@@ -79,14 +81,30 @@ def process_cookies(headers):
             if "cookie_counter" in item:
                 cookie_value = int(item.split("=")[1])
                 break
-    if cookie_value is None:
+    elif cookie_value is None:
         return 1
+    elif tiempo_actual > fecha_expiracion:
+        cookie_value +=1
+        return cookie_value
     elif cookie_value == MAX_ACCESOS:
         return MAX_ACCESOS
     elif cookie_value < MAX_ACCESOS:
         cookie_value += 1
         return cookie_value
-    
+       
+    '''
+    if "Cookie" in headers:
+        cookie_counter = int(headers.split('=')[1])
+        print("valor de cookie counter =",cookie_counter)   
+        if not cookie_counter:
+            return 1
+        elif cookie_counter == MAX_ACCESOS:
+            return MAX_ACCESOS
+        elif (cookie_counter >= 1) & (cookie_counter < MAX_ACCESOS):
+            cookie_counter += 1
+            return cookie_counter
+    pass
+    '''
 
 def process_web_request(cs, webroot):
     """ Procesamiento principal de los mensajes recibidos.
@@ -145,7 +163,8 @@ def process_web_request(cs, webroot):
                 cabecera = line.split(": ")
                 cabeceras = {cabecera[0] : cabecera[1]}
                 
-            cookie_counter = process_cookies(cabeceras)     
+            cookie_counter = process_cookies(cabeceras)
+               
             #  Si se ha llegado a MAX_ACCESOS devolver un Error "403 Forbidden"
             if cookie_counter >= MAX_ACCESOS:
                 return "Error 403: Forbidden"
@@ -161,7 +180,7 @@ def process_web_request(cs, webroot):
             respuesta += "Date: {}\r\n".format(datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT"))
             respuesta += "Server:{}\r\n".format(os.name)
             respuesta += "Connection: close\r\n"
-            respuesta += "Set-Cookie: cookie_counter={}\r\n".format(cookie_counter)
+            respuesta += "Set-Cookie: cookie_counter={}; Max-Age={}\r\n".format(cookie_counter, MAX_AGE)
             respuesta += "Content-Length: {}\r\n".format(size)
             respuesta += "Content-Type: {}\r\n".format(filetypes.get(extension))
             respuesta += "\r\n"
