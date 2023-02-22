@@ -72,33 +72,24 @@ def process_cookies(headers):
 
     # Fecha de Expiración de la cookie
     fecha_expiracion = tiempo_actual + MAX_AGE
-
-    cookie_value = 0
+    cookie_value_key = ''
+    cookie_value = -1
+    
     if "Cookie" in headers:
-        cookie = headers["Cookie"]
-        cookie_list = cookie.split("; ")
-        for item in cookie_list:
-            if "cookie_counter" in item:
-                cookie_value = int(item.split("=")[1])
-                break
-    elif cookie_value is None:
-        return 1
-    elif tiempo_actual > fecha_expiracion:
-        cookie_value +=1
-        return cookie_value
-    elif cookie_value == MAX_ACCESOS:
-        return MAX_ACCESOS
-    elif cookie_value < MAX_ACCESOS:
-        cookie_value += 1
-        return cookie_value
-       
-    '''
-    if "Cookie" in headers:
-        cookie_counter = int(headers.split('=')[1])
-        print("valor de cookie counter =",cookie_counter)   
-        if not cookie_counter:
+        cookie_value_key = headers["Cookie"]
+        cookie_value = int(cookie_value_key.split("=")[1])
+        if cookie_value is None:
             return 1
-        elif cookie_counter == MAX_ACCESOS:
+        elif tiempo_actual > fecha_expiracion:
+            cookie_value +=1
+            return cookie_value
+        elif cookie_value >= MAX_ACCESOS:
+            return MAX_ACCESOS
+        elif cookie_value < MAX_ACCESOS:
+            cookie_value += 1
+            return cookie_value
+    else:
+        if cookie_value >= MAX_ACCESOS:
             return MAX_ACCESOS
         else:
             cookie_value += 1
@@ -152,15 +143,16 @@ def process_web_request(cs, webroot):
             # * Comprobar que el recurso (fichero) existe, si no devolver Error 404 "Not found"
             if not os.path.isfile(abs_route):
                 return "Error 404: Not found"
-                # * Analizar las cabeceras. Imprimir cada cabecera y su valor. Si la cabecera es Cookie comprobar
-                #  el valor de cookie_counter para ver si ha llegado a MAX_ACCESOS.
-
+            # * Analizar las cabeceras. Imprimir cada cabecera y su valor. Si la cabecera es Cookie comprobar
+            #  el valor de cookie_counter para ver si ha llegado a MAX_ACCESOS.
+            
+            cabeceras = {}
             for line in lines[1:]:
                 if not line:
                     break
                 cabecera = line.split(": ")
-                cabeceras = {cabecera[0] : cabecera[1]}
-                
+                cabeceras[cabecera[0]] = cabecera[1]
+
             cookie_counter = process_cookies(cabeceras)
                
             #  Si se ha llegado a MAX_ACCESOS devolver un Error "403 Forbidden"
@@ -181,7 +173,7 @@ def process_web_request(cs, webroot):
             respuesta += "Set-Cookie: cookie_counter={}; Max-Age={}\r\n".format(cookie_counter, MAX_AGE)
             respuesta += "Content-Length: {}\r\n".format(size)
             respuesta += "Content-Type: {}\r\n".format(filetypes.get(extension))
-            respuesta += "\r\n"            
+            respuesta += "\r\n"
             # * Leer y enviar el contenido del fichero a retornar en el cuerpo de la respuesta.
             # * Se abre el fichero en modo lectura y modo binario
             # * Se lee el fichero en bloques de BUFSIZE bytes (8KB)
