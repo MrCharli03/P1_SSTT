@@ -177,18 +177,17 @@ def process_web_request(cs, webroot):
             # * Se lee el fichero en bloques de BUFSIZE bytes (8KB)
             # * Cuando ya no hay más información para leer, se corta el bucle
             
-            if (os.stat(abs_route).st_size + len(respuesta) > BUFSIZE):
+            with open(abs_route, "rb") as f:
+                if (os.stat(abs_route).st_size + len(respuesta) > BUFSIZE):
                 #Envio con fragmentacion
-                enviar_mensaje(cs, respuesta.encode())
-                with open(abs_route, "rb") as f:
+                    enviar_mensaje(cs, respuesta.encode())
                     while (True):
                         buff = f.read(BUFSIZE)
                         if(not buff):
                             break
                         enviar_mensaje(cs, buff)
-            else:
-                #Envio normal
-                with open(abs_route, "rb") as f:    
+                else:
+                #Envio normal   
                     buff = f.read() 
                     contenido = respuesta.encode() + buff 
                     enviar_mensaje(cs, contenido) 
