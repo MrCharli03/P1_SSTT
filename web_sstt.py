@@ -71,7 +71,7 @@ def process_cookies(headers):
         5. Si se encuentra y tiene un valor 1 <= x < MAX_ACCESOS se incrementa en 1 y se devuelve el valor
     """
     
-    cookie_value = None
+    cookie_value = 0 
     if "Cookie" in headers:
         cookie = headers["Cookie"]
         cookie_list = cookie.split("; ")
@@ -86,20 +86,6 @@ def process_cookies(headers):
     elif cookie_value < MAX_ACCESOS:
         cookie_value += 1
         return cookie_value
-    
-    '''
-    if "Cookie" in headers:
-        cookie_counter = int(headers.split('=')[1])
-        print("valor de cookie counter =",cookie_counter)   
-        if not cookie_counter:
-            return 1
-        elif cookie_counter == MAX_ACCESOS:
-            return MAX_ACCESOS
-        elif (cookie_counter >= 1) & (cookie_counter < MAX_ACCESOS):
-            cookie_counter += 1
-            return cookie_counter
-    pass
-    '''
     
 
 def process_web_request(cs, webroot):
@@ -175,7 +161,7 @@ def process_web_request(cs, webroot):
             respuesta += "Date: {}\r\n".format(datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT"))
             respuesta += "Server:{}\r\n".format(os.name)
             respuesta += "Connection: close\r\n"
-            #respuesta += "Set-Cookie: cookie_counter={}\r\n".format(cookie_counter)
+            respuesta += "Set-Cookie: cookie_counter={}\r\n".format(cookie_counter)
             respuesta += "Content-Length: {}\r\n".format(size)
             respuesta += "Content-Type: {}\r\n".format(filetypes.get(extension))
             respuesta += "\r\n"
@@ -183,18 +169,20 @@ def process_web_request(cs, webroot):
             # * Se abre el fichero en modo lectura y modo binario
             # * Se lee el fichero en bloques de BUFSIZE bytes (8KB)
             # * Cuando ya no hay más información para leer, se corta el bucle
-            with open(abs_route, 'rb') as f:
-                    if(size + len(cabecera) <= BUFSIZE):
-                        datos = f.read(BUFSIZE)
-                        contenido = respuesta.encode() + datos
-                        enviar_mensaje(cs, contenido)
-                    else:
-                        enviar_mensaje(cs, respuesta.encode())
-                        while True:
-                            datos = f.read(BUFSIZE)
-                            if not datos:
-                                break
-                            enviar_mensaje(cs, datos)
+            with open(abs_route, "rb") as f:
+                if (os.stat(abs_route).st_size + len(respuesta) > BUFSIZE):
+                #Envio con fragmentacion
+                    enviar_mensaje(cs, respuesta.encode())
+                    while (True):
+                        buff = f.read(BUFSIZE)
+                        if(not buff):
+                            break
+                        enviar_mensaje(cs, buff)
+                else:
+                #Envio normal   
+                    buff = f.read() 
+                    contenido = respuesta.encode() + buff 
+                    enviar_mensaje(cs, contenido) 
         # * Si es por timeout, se cierra el socket tras el período de persistencia.
         else:
             # * NOTA: Si hay algún error, enviar una respuesta de error con una pequeña página HTML que informe del error.
