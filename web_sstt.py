@@ -68,10 +68,6 @@ def process_cookies(headers):
         5. Si se encuentra y tiene un valor 1 <= x < MAX_ACCESOS se incrementa en 1 y se devuelve el valor
     """
 
-    tiempo_actual = time.time()
-
-    # Fecha de Expiración de la cookie
-    fecha_expiracion = tiempo_actual + MAX_AGE
     cookie_value_key = ''
     cookie_value = -1
     
@@ -80,9 +76,6 @@ def process_cookies(headers):
         cookie_value = int(cookie_value_key.split("=")[1])
         if cookie_value is None:
             return 1
-        elif tiempo_actual > fecha_expiracion:
-            cookie_value +=1
-            return cookie_value
         elif cookie_value >= MAX_ACCESOS:
             return MAX_ACCESOS
         elif cookie_value < MAX_ACCESOS:
