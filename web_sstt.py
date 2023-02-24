@@ -41,9 +41,8 @@ def enviar_mensaje(cs, data):
 
 
 def recibir_mensaje(cs):
-    """ 
-    Esta función recibe datos a través del socket cs
-    Leemos la información que nos llega. recv() devuelve un string con los datos.
+    """ Esta función recibe datos a través del socket cs
+        Leemos la información que nos llega. recv() devuelve un string con los datos.
     """
     datos = cs.recv(BUFSIZE)
     return datos.decode()
@@ -53,22 +52,15 @@ def recibir_mensaje(cs):
 
 def cerrar_conexion(cs):
     cs.close()
-    pass
-
-def enviar_recurso(ruta, tam, cabecera, cs):
-    '''
-    Esta funcion envia un recurso hacia el cliente teniendo en cuenta el
-    tamaño del mismo.
-    '''
+    pass 
 
 def process_cookies(headers):
-    """ 
-    Esta función procesa la cookie cookie_counter
-    1. Se analizan las cabeceras en headers para buscar la cabecera Cookie
-    2. Una vez encontrada una cabecera Cookie se comprueba si el valor es cookie_counter
-    3. Si no se encuentra cookie_counter , se devuelve 1
-    4. Si se encuentra y tiene el valor MAX_ACCESSOS se devuelve MAX_ACCESOS
-    5. Si se encuentra y tiene un valor 1 <= x < MAX_ACCESOS se incrementa en 1 y se devuelve el valor
+    """ Esta función procesa la cookie cookie_counter
+        1. Se analizan las cabeceras en headers para buscar la cabecera Cookie
+        2. Una vez encontrada una cabecera Cookie se comprueba si el valor es cookie_counter
+        3. Si no se encuentra cookie_counter , se devuelve 1
+        4. Si se encuentra y tiene el valor MAX_ACCESSOS se devuelve MAX_ACCESOS
+        5. Si se encuentra y tiene un valor 1 <= x < MAX_ACCESOS se incrementa en 1 y se devuelve el valor
     """
 
     cookie_value_key = ''
@@ -121,15 +113,18 @@ def process_web_request(cs, webroot):
 
             # * Comprobar si la versión de HTTP es 1.1
             if content_atributes[2] != "HTTP/1.1":
-                respuesta = 'HTTP/1.1 505 HTTP Version Not Supported\r\n'
-                enviar_mensaje(cs, respuesta.encode())
-                cerrar_conexion(cs)
-                print('Funcionna')
-                break
+                return "Error 505 HTTP Version Not Supported"
 
             # * Comprobar si es un método GET. Si no devolver un error Error 405 "Method Not Allowed".
             if content_atributes[0] != "GET":
-                return "Error 405 Method Not Allowed"
+                respuesta = 'HTTP/1.1 405 Method Not Allowed\r\nContent-Type: text/html\r\n\r\n'
+                respuesta += '<html><head><title>405 Method Not Allowed</title></head>'
+                respuesta += '<body><h1>405 Method Not Allowed</h1></body></html>'
+                enviar_mensaje(cs, respuesta.encode()) 
+                
+                print("Error 405 Method Not Allowed")    
+                cerrar_conexion(cs)
+                break
 
             # * Leer URL y eliminar parámetros si los hubiera
             url = content_atributes[1].split("?")[0]
@@ -142,7 +137,16 @@ def process_web_request(cs, webroot):
             abs_route = webroot + url
             # * Comprobar que el recurso (fichero) existe, si no devolver Error 404 "Not found"
             if not os.path.isfile(abs_route):
-                return "Error 404: Not found"
+                
+                respuesta = 'HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\n'
+                respuesta += '<html><head><title>404 Not Found</title></head>'
+                respuesta += '<body><h1>404 Not Found</h1></body></html>'
+                enviar_mensaje(cs, respuesta.encode())  
+                
+                print("Error 404 not found")    
+                cerrar_conexion(cs)
+                break
+                
             # * Analizar las cabeceras. Imprimir cada cabecera y su valor. Si la cabecera es Cookie comprobar
             #  el valor de cookie_counter para ver si ha llegado a MAX_ACCESOS.
             
@@ -191,11 +195,10 @@ def process_web_request(cs, webroot):
                 #Envio normal   
                     buff = f.read() 
                     contenido = respuesta.encode() + buff 
-                    enviar_mensaje(cs, contenido)
+                    enviar_mensaje(cs, contenido) 
         # * Si es por timeout, se cierra el socket tras el período de persistencia.
         else:
             # * NOTA: Si hay algún error, enviar una respuesta de error con una pequeña página HTML que informe del error.
-            
             cerrar_conexion(cs)
             break
 
@@ -240,13 +243,7 @@ def main():
             sckt.listen(BACKLOG)
 
             # Bucle infinito para mantener el servidor activo indefinidamente
-
-            # - Aceptamos la conexión
-
-            # - Creamos un proceso hijo
-
             # - Si es el proceso hijo se cierra el socket del padre y procesar la petición con process_web_request()
-
             # - Si es el proceso padre cerrar el socket que gestiona el hijo.
             while (True):
                 conn, addr = sckt.accept()
