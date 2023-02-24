@@ -82,6 +82,9 @@ def process_cookies(headers):
         else:
             cookie_value += 1
             return cookie_value
+def process_GET():
+    
+    pass
 
 def process_web_request(cs, webroot):
     """ Procesamiento principal de los mensajes recibidos.
@@ -113,8 +116,12 @@ def process_web_request(cs, webroot):
 
             # * Comprobar si la versión de HTTP es 1.1
             if content_atributes[2] != "HTTP/1.1":
-                respuesta = "HTTP/1.1 505 HTTP Version Not Supported\r\n"
+                respuesta = "HTTP/1.1 505 HTTP Version Not Supported\r\nContent-Type: text/html\r\n\r\n"
+                respuesta += '<html><head><title>505 Version Not Supported</title></head>'
+                respuesta += '<body><h1>505 Version Not Supported</h1></body></html>'
                 enviar_mensaje(cs, respuesta.encode())
+
+                print("Error 505 Version Not Supported")
                 cerrar_conexion(cs)
                 break
 
@@ -160,12 +167,12 @@ def process_web_request(cs, webroot):
                 cabecera = line.split(": ")
                 cabeceras[cabecera[0]] = cabecera[1]
 
-            cookie_counter = process_cookies(cabeceras)
-               
+            cookie_counter = process_cookies(cabeceras)        
             #  Si se ha llegado a MAX_ACCESOS devolver un Error "403 Forbidden"
             if cookie_counter >= MAX_ACCESOS:
                 return "Error 403: Forbidden"
             
+
             # * Obtener el tamaño del recurso en bytes.
             size = os.stat(abs_route).st_size
             # * Extraer extensión para obtener el tipo de archivo. Necesario para la cabecera Content-Type
