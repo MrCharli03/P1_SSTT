@@ -113,7 +113,10 @@ def process_web_request(cs, webroot):
 
             # * Comprobar si la versión de HTTP es 1.1
             if content_atributes[2] != "HTTP/1.1":
-                return "Error 505 HTTP Version Not Supported"
+                respuesta = "HTTP/1.1 505 HTTP Version Not Supported\r\n"
+                enviar_mensaje(cs, respuesta.encode())
+                cerrar_conexion(cs)
+                break
 
             # * Comprobar si es un método GET. Si no devolver un error Error 405 "Method Not Allowed".
             if content_atributes[0] != "GET":
