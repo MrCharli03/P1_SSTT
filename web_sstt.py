@@ -24,7 +24,7 @@ MAX_AGE = 5
 
 # Extensiones admitidas (extension, name in HTTP)
 filetypes = {"gif": "image/gif", "jpg": "image/jpg", "jpeg": "image/jpeg", "png": "image/png", "htm": "text/htm",
-             "html": "text/html", "css": "text/css", "js": "text/js"}
+             "html": "text/html", "css": "text/css", "js": "text/js", "ico":"image/jpg"}
 
 # Configuración de logging
 logging.basicConfig(level=logging.INFO,
@@ -115,6 +115,8 @@ def process_web_request(cs, webroot):
             if content_atributes[2] != "HTTP/1.1":
                 respuesta = "HTTP/1.1 505 HTTP Version Not Supported\r\n"
                 enviar_mensaje(cs, respuesta.encode())
+                
+                print("Error 505 HTTP Version Not Supported")
                 cerrar_conexion(cs)
                 break
 
