@@ -257,12 +257,12 @@ def main():
             # - Si es el proceso padre cerrar el socket que gestiona el hijo.
             while (True):
                 conn, addr = sckt.accept()
-                '''  if os.fork() == 0:
+                if os.fork() == 0:
                     cerrar_conexion(sckt, )
                     process_web_request(conn, args.webroot)
 
                 else:
-                    cerrar_conexion(conn)'''
+                    cerrar_conexion(conn)
                 process_web_request(conn, args.webroot)
 
     except KeyboardInterrupt:
