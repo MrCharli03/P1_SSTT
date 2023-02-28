@@ -16,7 +16,7 @@ import logging      # Para imprimir logs
 
 BUFSIZE = 8192  # Tamaño máximo del buffer que se puede utilizar
 # Timout para la conexión persistente //cambiar a 5 seconds para hacer pruebas
-TIMEOUT_CONNECTION = 5
+TIMEOUT_CONNECTION = 20
 MAX_ACCESOS = 10
 BACKLOG = 64
 MAX_AGE = 5 
@@ -124,7 +124,7 @@ def process_web_request(cs, webroot):
                 break
 
             # * Comprobar si es un método GET. Si no devolver un error Error 405 "Method Not Allowed".
-            if content_atributes[0] != "GET" :
+            if content_atributes[0] != "GET" and content_atributes[0] != "POST":
                 respuesta = 'HTTP/1.1 405 Method Not Allowed\r\nContent-Type: text/html\r\n\r\n'
                 respuesta += '<html><head><title>405 Method Not Allowed</title></head>'
                 respuesta += '<body><h1>405 Method Not Allowed</h1></body></html>'
@@ -182,7 +182,7 @@ def process_web_request(cs, webroot):
             respuesta = "HTTP/1.1 200 OK\r\n"
             respuesta += "Date: {}\r\n".format(datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT"))
             respuesta += "Server:{}\r\n".format(os.name)
-            respuesta += "Connection: close\r\n"
+            respuesta += "Connection: keep-alive\r\n"
             respuesta += "Set-Cookie: cookie_counter={}; Max-Age={}\r\n".format(cookie_counter, MAX_AGE)
             respuesta += "Content-Length: {}\r\n".format(size)
             respuesta += "Content-Type: {}\r\n".format(filetypes.get(extension))
@@ -258,16 +258,18 @@ def main():
             while (True):
 
                 client_shocket, client_addr = sckt.accept()
+                
                 pid=os.fork()   
                 if pid == 0:
                     cerrar_conexion(sckt)   
                     process_web_request(client_shocket, args.webroot)
-                    cerrar_conexion(client_shocket)   
+                    #cerrar_conexion(client_shocket)   
                     print ("Bye child") 
                     exit(0)      
                 else:
                     cerrar_conexion(client_shocket)
-
+                
+                
     except KeyboardInterrupt:
         True
 
