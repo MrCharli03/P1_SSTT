@@ -263,7 +263,7 @@ def main():
                     cerrar_conexion(client_shocket)   
                     cerrar_conexion(sckt)   
                     print ("Bye child") 
-                    
+                    exit(0)      
                 else:
                     cerrar_conexion(client_shocket) 
 
