@@ -16,7 +16,7 @@ import logging      # Para imprimir logs
 
 BUFSIZE = 8192  # Tamaño máximo del buffer que se puede utilizar
 # Timout para la conexión persistente //cambiar a 5 seconds para hacer pruebas
-TIMEOUT_CONNECTION = 20
+TIMEOUT_CONNECTION = 200
 MAX_ACCESOS = 10
 BACKLOG = 64
 MAX_AGE = 5 
@@ -127,7 +127,7 @@ def process_web_request(cs, webroot):
                 break
 
             # * Comprobar si es un método GET. Si no devolver un error Error 405 "Method Not Allowed".
-            if content_atributes[0] != "GET":
+            if content_atributes[0] != "GET" :
                 respuesta = 'HTTP/1.1 405 Method Not Allowed\r\nContent-Type: text/html\r\n\r\n'
                 respuesta += '<html><head><title>405 Method Not Allowed</title></head>'
                 respuesta += '<body><h1>405 Method Not Allowed</h1></body></html>'
@@ -272,8 +272,7 @@ def main():
                     cerrar_conexion(client_shocket)    
                     exit(0)      
                 else:
-                    cerrar_conexion(client_shocket)
-                    print("\n\nSocket del Cliente cerrado: " + str(client_shocket.getsockname()[0])+" : "+str(client_shocket.getsockname()[1])) 
+                    cerrar_conexion(client_shocket) 
 
     except KeyboardInterrupt:
         True
