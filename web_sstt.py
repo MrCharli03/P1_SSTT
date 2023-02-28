@@ -99,8 +99,7 @@ def process_web_request(cs, webroot):
     while (True):
         # Se comprueba si hay que cerrar la conexión por exceder TIMEOUT_CONNECTION segundos
         # sin recibir ningún mensaje o hay datos. Se utiliza select.select
-        rsublist, wsublist, xsublist = select.select(
-            rlist, wlist, xlist, TIMEOUT_CONNECTION)
+        rsublist, wsublist, xsublist = select.select(rlist, wlist, xlist, TIMEOUT_CONNECTION)
 
         # * Si no es por timeout y hay datos en el socket cs.
         if rsublist:
@@ -248,26 +247,23 @@ def main():
             # Escucha conexiones entrantes
          
             sckt.listen(BACKLOG)
+            print("Socket now listening")   
 
             # Bucle infinito para mantener el servidor activo indefinidamente
             # - Si es el proceso hijo se cierra el socket del padre y procesar la petición con process_web_request()
             # - Si es el proceso padre cerrar el socket que gestiona el hijo.
             while (True):
-                sckt_cli, dir_cliente = sckt.accept()
 
-                pid = os.fork()
-
+                client_shocket, client_addr = sckt.accept()
+                pid=os.fork()   
                 if pid == 0:
-                    #Hijo
-                    print("Hijo")
-                    cerrar_conexion(sckt)
-                    process_web_request(sckt_cli, args.webroot)
-                    cerrar_conexion(sckt_cli)
-                else:
-                    #Padre
-                    print("padre")
-                    cerrar_conexion(sckt_cli)
+                    process_web_request(client_shocket, args.webroot)
+                    cerrar_conexion(client_shocket)   
+                    cerrar_conexion(sckt)   
+                    print ("Bye child") 
                     
+                else:
+                    cerrar_conexion(client_shocket) 
 
     except KeyboardInterrupt:
         True
