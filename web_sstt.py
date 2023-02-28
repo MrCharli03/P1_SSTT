@@ -105,7 +105,6 @@ def process_web_request(cs, webroot):
             # * Leer los datos con recv.
             data = recibir_mensaje(cs)
             if not data:
-                cerrar_conexion(cs)
                 break
 
             # * Analizar que la línea de solicitud y comprobar está bien formateada según HTTP 1.1
@@ -121,7 +120,6 @@ def process_web_request(cs, webroot):
                 enviar_mensaje(cs, respuesta.encode())
 
                 print("Error 505 HTTP Version Not Supported")
-                cerrar_conexion(cs)
                 break
 
             # * Comprobar si es un método GET. Si no devolver un error Error 405 "Method Not Allowed".
@@ -132,7 +130,6 @@ def process_web_request(cs, webroot):
                 enviar_mensaje(cs, respuesta.encode()) 
                 
                 print("Error 405 Method Not Allowed")    
-                cerrar_conexion(cs)
                 break
 
             # * Leer URL y eliminar parámetros si los hubiera
@@ -153,7 +150,6 @@ def process_web_request(cs, webroot):
                 enviar_mensaje(cs, respuesta.encode())  
                 
                 print("Error 404 not found")    
-                cerrar_conexion(cs)
                 break
                 
             # * Analizar las cabeceras. Imprimir cada cabecera y su valor. Si la cabecera es Cookie comprobar
@@ -169,8 +165,11 @@ def process_web_request(cs, webroot):
             cookie_counter = process_cookies(cabeceras)        
             #  Si se ha llegado a MAX_ACCESOS devolver un Error "403 Forbidden"
             if cookie_counter >= MAX_ACCESOS:
-                return "Error 403: Forbidden"
-            
+                respuesta = 'HTTP/1.1 403 Forbidden\r\nContent-Type: text/html\r\n\r\n'
+                respuesta += '<html><head><title>403 Forbidden</title></head>'
+                respuesta += '<body><h1>403 Forbidden</h1></body></html>'
+                enviar_mensaje(cs, respuesta.encode())     
+                break
 
             # * Obtener el tamaño del recurso en bytes.
             size = os.stat(abs_route).st_size
@@ -208,7 +207,7 @@ def process_web_request(cs, webroot):
         # * Si es por timeout, se cierra el socket tras el período de persistencia.
         else:
             # * NOTA: Si hay algún error, enviar una respuesta de error con una pequeña página HTML que informe del error.
-            cerrar_conexion(cs)
+            print("\n\nHa salto el Timeout.")
             break
 
 def main():
@@ -259,9 +258,9 @@ def main():
                 client_shocket, client_addr = sckt.accept()
                 pid=os.fork()   
                 if pid == 0:
+                    cerrar_conexion(sckt)   
                     process_web_request(client_shocket, args.webroot)
                     cerrar_conexion(client_shocket)   
-                    cerrar_conexion(sckt)   
                     print ("Bye child") 
                     exit(0)      
                 else:
