@@ -16,7 +16,7 @@ import logging      # Para imprimir logs
 
 BUFSIZE = 8192  # Tamaño máximo del buffer que se puede utilizar
 # Timout para la conexión persistente //cambiar a 5 seconds para hacer pruebas
-TIMEOUT_CONNECTION = 20
+TIMEOUT_CONNECTION = 200
 MAX_ACCESOS = 10
 BACKLOG = 64
 MAX_AGE = 5 
@@ -82,6 +82,7 @@ def process_cookies(headers):
         else:
             cookie_value += 1
             return cookie_value
+
 def process_GET():
     
     pass
@@ -106,7 +107,6 @@ def process_web_request(cs, webroot):
             # * Leer los datos con recv.
             data = recibir_mensaje(cs)
             if not data:
-                cerrar_conexion(cs)
                 break
 
             # * Analizar que la línea de solicitud y comprobar está bien formateada según HTTP 1.1
@@ -122,7 +122,6 @@ def process_web_request(cs, webroot):
                 enviar_mensaje(cs, respuesta.encode())
 
                 print("Error 505 HTTP Version Not Supported")
-                cerrar_conexion(cs)
                 break
 
             # * Comprobar si es un método GET. Si no devolver un error Error 405 "Method Not Allowed".
@@ -133,7 +132,6 @@ def process_web_request(cs, webroot):
                 enviar_mensaje(cs, respuesta.encode()) 
                 
                 print("Error 405 Method Not Allowed")    
-                cerrar_conexion(cs)
                 break
 
             # * Leer URL y eliminar parámetros si los hubiera
@@ -152,9 +150,8 @@ def process_web_request(cs, webroot):
                 respuesta += '<html><head><title>404 Not Found</title></head>'
                 respuesta += '<body><h1>404 Not Found</h1></body></html>'
                 enviar_mensaje(cs, respuesta.encode())  
+
                 
-                print("Error 404 not found")    
-                cerrar_conexion(cs)
                 break
                 
             # * Analizar las cabeceras. Imprimir cada cabecera y su valor. Si la cabecera es Cookie comprobar
@@ -256,14 +253,21 @@ def main():
             # - Si es el proceso hijo se cierra el socket del padre y procesar la petición con process_web_request()
             # - Si es el proceso padre cerrar el socket que gestiona el hijo.
             while (True):
-                conn, addr = sckt.accept()
-                '''  if os.fork() == 0:
-                    cerrar_conexion(sckt, )
-                    process_web_request(conn, args.webroot)
+                sckt_cli, dir_cliente = sckt.accept()
 
+                pid = os.fork()
+
+                if pid == 0:
+                    #Hijo
+                    print("Hijo")
+                    cerrar_conexion(sckt)
+                    process_web_request(sckt_cli, args.webroot)
+                    cerrar_conexion(sckt_cli)
                 else:
-                    cerrar_conexion(conn)'''
-                process_web_request(conn, args.webroot)
+                    #Padre
+                    print("padre")
+                    cerrar_conexion(sckt_cli)
+                    
 
     except KeyboardInterrupt:
         True
