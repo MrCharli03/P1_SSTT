@@ -16,7 +16,7 @@ import logging      # Para imprimir logs
 
 BUFSIZE = 8192  # Tamaño máximo del buffer que se puede utilizar
 # Timout para la conexión persistente //cambiar a 5 seconds para hacer pruebas
-TIMEOUT_CONNECTION = 200
+TIMEOUT_CONNECTION = 20
 MAX_ACCESOS = 10
 BACKLOG = 64
 MAX_AGE = 5 
@@ -77,6 +77,7 @@ def process_cookies(headers):
             cookie_value += 1
             return cookie_value
     else:
+        print("\n\nEstableciendo cookie...") 
         if cookie_value >= MAX_ACCESOS:
             return MAX_ACCESOS
         else:
@@ -100,14 +101,16 @@ def process_web_request(cs, webroot):
         # Se comprueba si hay que cerrar la conexión por exceder TIMEOUT_CONNECTION segundos
         # sin recibir ningún mensaje o hay datos. Se utiliza select.select
         rsublist, wsublist, xsublist = select.select(rlist, wlist, xlist, TIMEOUT_CONNECTION)
-
+        
+        print("Cliente: " + str(cs.getsockname()[0])+" : "+str(cs.getsockname()[1])) 
         # * Si no es por timeout y hay datos en el socket cs.
         if rsublist:
             # * Leer los datos con recv.
+            print("\n\nPETICION RECIBIDA: ")
             data = recibir_mensaje(cs)
             if not data:
                 break
-
+            print(data) 
             # * Analizar que la línea de solicitud y comprobar está bien formateada según HTTP 1.1
             # * Devuelve una lista con los atributos de las cabeceras.
             lines = data.split("\r\n")
@@ -120,7 +123,7 @@ def process_web_request(cs, webroot):
                 respuesta += '<body><h1>505 HTTP Version Not Supported</h1></body></html>'
                 enviar_mensaje(cs, respuesta.encode())
 
-                print("Error 505 HTTP Version Not Supported")
+                print("Motivo: Error 505 HTTP Version Not Supported")
                 break
 
             # * Comprobar si es un método GET. Si no devolver un error Error 405 "Method Not Allowed".
@@ -130,7 +133,7 @@ def process_web_request(cs, webroot):
                 respuesta += '<body><h1>405 Method Not Allowed</h1></body></html>'
                 enviar_mensaje(cs, respuesta.encode()) 
                 
-                print("Error 405 Method Not Allowed")    
+                print("Motivo: Error 405 Method Not Allowed")    
                 break
 
             # * Leer URL y eliminar parámetros si los hubiera
@@ -149,8 +152,7 @@ def process_web_request(cs, webroot):
                 respuesta += '<html><head><title>404 Not Found</title></head>'
                 respuesta += '<body><h1>404 Not Found</h1></body></html>'
                 enviar_mensaje(cs, respuesta.encode())  
-
-                
+                print("Motivo: Error 404 Not Found") 
                 break
                 
             # * Analizar las cabeceras. Imprimir cada cabecera y su valor. Si la cabecera es Cookie comprobar
@@ -169,7 +171,8 @@ def process_web_request(cs, webroot):
                 respuesta = 'HTTP/1.1 403 Forbidden\r\nContent-Type: text/html\r\n\r\n'
                 respuesta += '<html><head><title>403 Forbidden</title></head>'
                 respuesta += '<body><h1>403 Forbidden</h1></body></html>'
-                enviar_mensaje(cs, respuesta.encode())     
+                enviar_mensaje(cs, respuesta.encode())  
+                print("Motivo: Error 403 Forbidden")    
                 break
 
             # * Obtener el tamaño del recurso en bytes.
@@ -182,11 +185,12 @@ def process_web_request(cs, webroot):
             respuesta = "HTTP/1.1 200 OK\r\n"
             respuesta += "Date: {}\r\n".format(datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT"))
             respuesta += "Server:{}\r\n".format(os.name)
-            respuesta += "Connection: close\r\n"
+            respuesta += "Connection: keep-alive\r\n"
             respuesta += "Set-Cookie: cookie_counter={}; Max-Age={}\r\n".format(cookie_counter, MAX_AGE)
             respuesta += "Content-Length: {}\r\n".format(size)
             respuesta += "Content-Type: {}\r\n".format(filetypes.get(extension))
             respuesta += "\r\n"
+            
             # * Leer y enviar el contenido del fichero a retornar en el cuerpo de la respuesta.
             # * Se abre el fichero en modo lectura y modo binario
             # * Se lee el fichero en bloques de BUFSIZE bytes (8KB)
@@ -205,6 +209,8 @@ def process_web_request(cs, webroot):
                     buff = f.read() 
                     contenido = respuesta.encode() + buff 
                     enviar_mensaje(cs, contenido) 
+            print("\n\nRespuesta enviada: ")
+            print(respuesta)
         # * Si es por timeout, se cierra el socket tras el período de persistencia.
         else:
             # * NOTA: Si hay algún error, enviar una respuesta de error con una pequeña página HTML que informe del error.
@@ -250,7 +256,7 @@ def main():
             # Escucha conexiones entrantes
          
             sckt.listen(BACKLOG)
-            print("Socket now listening")   
+            print("Socket now listening\n\n")   
 
             # Bucle infinito para mantener el servidor activo indefinidamente
             # - Si es el proceso hijo se cierra el socket del padre y procesar la petición con process_web_request()
@@ -262,11 +268,12 @@ def main():
                 if pid == 0:
                     cerrar_conexion(sckt)   
                     process_web_request(client_shocket, args.webroot)
-                    cerrar_conexion(client_shocket)   
-                    print ("Bye child") 
+                    print("\n\nSocket del Cliente cerrado: " + str(client_shocket.getsockname()[0])+" : "+str(client_shocket.getsockname()[1]))
+                    cerrar_conexion(client_shocket)    
                     exit(0)      
                 else:
-                    cerrar_conexion(client_shocket) 
+                    cerrar_conexion(client_shocket)
+                    print("\n\nSocket del Cliente cerrado: " + str(client_shocket.getsockname()[0])+" : "+str(client_shocket.getsockname()[1])) 
 
     except KeyboardInterrupt:
         True
