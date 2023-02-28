@@ -16,7 +16,7 @@ import logging      # Para imprimir logs
 
 BUFSIZE = 8192  # Tamaño máximo del buffer que se puede utilizar
 # Timout para la conexión persistente //cambiar a 5 seconds para hacer pruebas
-TIMEOUT_CONNECTION = 20
+TIMEOUT_CONNECTION = 200
 MAX_ACCESOS = 10
 BACKLOG = 64
 MAX_AGE = 5 
@@ -82,6 +82,7 @@ def process_cookies(headers):
         else:
             cookie_value += 1
             return cookie_value
+
 def process_GET():
     
     pass
@@ -148,8 +149,8 @@ def process_web_request(cs, webroot):
                 respuesta += '<html><head><title>404 Not Found</title></head>'
                 respuesta += '<body><h1>404 Not Found</h1></body></html>'
                 enviar_mensaje(cs, respuesta.encode())  
+
                 
-                print("Error 404 not found")    
                 break
                 
             # * Analizar las cabeceras. Imprimir cada cabecera y su valor. Si la cabecera es Cookie comprobar
@@ -255,6 +256,7 @@ def main():
             # - Si es el proceso hijo se cierra el socket del padre y procesar la petición con process_web_request()
             # - Si es el proceso padre cerrar el socket que gestiona el hijo.
             while (True):
+
                 client_shocket, client_addr = sckt.accept()
                 pid=os.fork()   
                 if pid == 0:
