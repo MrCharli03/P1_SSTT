@@ -16,7 +16,7 @@ import logging      # Para imprimir logs
 
 BUFSIZE = 8192  # Tamaño máximo del buffer que se puede utilizar
 # Timout para la conexión persistente //cambiar a 5 seconds para hacer pruebas
-TIMEOUT_CONNECTION = 200
+TIMEOUT_CONNECTION = 5
 MAX_ACCESOS = 10
 BACKLOG = 64
 MAX_AGE = 5 
@@ -124,7 +124,7 @@ def process_web_request(cs, webroot):
                 break
 
             # * Comprobar si es un método GET. Si no devolver un error Error 405 "Method Not Allowed".
-            if content_atributes[0] != "GET":
+            if content_atributes[0] != "GET" :
                 respuesta = 'HTTP/1.1 405 Method Not Allowed\r\nContent-Type: text/html\r\n\r\n'
                 respuesta += '<html><head><title>405 Method Not Allowed</title></head>'
                 respuesta += '<body><h1>405 Method Not Allowed</h1></body></html>'
@@ -167,7 +167,6 @@ def process_web_request(cs, webroot):
             #  Si se ha llegado a MAX_ACCESOS devolver un Error "403 Forbidden"
             if cookie_counter >= MAX_ACCESOS:
                 return "Error 403: Forbidden"
-            
 
             # * Obtener el tamaño del recurso en bytes.
             size = os.stat(abs_route).st_size
@@ -263,7 +262,7 @@ def main():
                     print ("Bye child") 
                     exit(0)      
                 else:
-                    cerrar_conexion(client_shocket) 
+                    cerrar_conexion(client_shocket)
 
     except KeyboardInterrupt:
         True
