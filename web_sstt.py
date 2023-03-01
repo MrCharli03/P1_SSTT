@@ -213,28 +213,21 @@ def process_web_request(cs, webroot):
                 print("\n\nRespuesta enviada: ")
                 print(respuesta) 
             else:
-                
                 cabeceras = {}
-                diccionario_datos = {}
-                division = data.split('/r/n/r/n')
-                print("----------------------------------------------------------------------------------")
-                print(division[0])
-                print("-------------------------------------------------------------------------------------")
-                falso_get = division[0].split("/r/n")
-                for line in falso_get[1:]:
+                datos = {}
+                for line in lines[1:]:
                     if not line:
                         break
                     cabecera = line.split(": ")
                     cabeceras[cabecera[0]] = cabecera[1]
-                
-                datos = division[1].split("&")
-                for dato in datos[0:]:
+                tail = lines[-1]
+                lista_datos = tail.split("&")
+                for dato in lista_datos:
                     if not dato:
                         break
-                    aux = dato.split("=")
-                    diccionario_datos = [aux[0]] = aux[1]
-                
-                    
+                    n = dato.split("=")
+                    datos[n[0]] = n[1]
+                print(datos["email"])
               
             
         # * Si es por timeout, se cierra el socket tras el período de persistencia.
