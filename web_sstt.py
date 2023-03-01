@@ -84,9 +84,6 @@ def process_cookies(headers):
             cookie_value += 1
             return cookie_value
 
-def process_GET():
-    
-    pass
 
 def process_web_request(cs, webroot):
     """ Procesamiento principal de los mensajes recibidos.
@@ -126,7 +123,7 @@ def process_web_request(cs, webroot):
                 print("Motivo: Error 505 HTTP Version Not Supported")
                 break
 
-            # * Comprobar si es un método GET. Si no devolver un error Error 405 "Method Not Allowed".
+            # * Comprobar si es un método GET o POST. Si no devolver un error Error 405 "Method Not Allowed".
             if content_atributes[0] != "GET" and content_atributes[0] != "POST":
                 respuesta = 'HTTP/1.1 405 Method Not Allowed\r\nContent-Type: text/html\r\n\r\n'
                 respuesta += '<html><head><title>405 Method Not Allowed</title></head>'
@@ -136,81 +133,110 @@ def process_web_request(cs, webroot):
                 print("Motivo: Error 405 Method Not Allowed")    
                 break
 
-            # * Leer URL y eliminar parámetros si los hubiera
-            url = content_atributes[1].split("?")[0]
+            if content_atributes[0] == "GET":
+               # * Leer URL y eliminar parámetros si los hubiera
+                url = content_atributes[1].split("?")[0]
 
-            # * Comprobar si el recurso solicitado es /, En ese caso el recurso es index.html
-            if url == "/":
-                url = "/index.html"
+                # * Comprobar si el recurso solicitado es /, En ese caso el recurso es index.html
+                if url == "/":
+                    url = "/index.html"
 
-            # * Construir la ruta absoluta del recurso (webroot + recurso solicitado)
-            abs_route = webroot + url
-            # * Comprobar que el recurso (fichero) existe, si no devolver Error 404 "Not found"
-            if not os.path.isfile(abs_route):
+                # * Construir la ruta absoluta del recurso (webroot + recurso solicitado)
+                abs_route = webroot + url
+                # * Comprobar que el recurso (fichero) existe, si no devolver Error 404 "Not found"
                 
-                respuesta = 'HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\n'
-                respuesta += '<html><head><title>404 Not Found</title></head>'
-                respuesta += '<body><h1>404 Not Found</h1></body></html>'
-                enviar_mensaje(cs, respuesta.encode())  
-                print("Motivo: Error 404 Not Found") 
-                break
-                
-            # * Analizar las cabeceras. Imprimir cada cabecera y su valor. Si la cabecera es Cookie comprobar
-            #  el valor de cookie_counter para ver si ha llegado a MAX_ACCESOS.
-            
-            cabeceras = {}
-            for line in lines[1:]:
-                if not line:
+                if not os.path.isfile(abs_route):
+                    
+                    respuesta = 'HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\n'
+                    respuesta += '<html><head><title>404 Not Found</title></head>'
+                    respuesta += '<body><h1>404 Not Found</h1></body></html>'
+                    enviar_mensaje(cs, respuesta.encode())  
+                    print("Motivo: Error 404 Not Found") 
                     break
-                cabecera = line.split(": ")
-                cabeceras[cabecera[0]] = cabecera[1]
+                    
+                # * Analizar las cabeceras. Imprimir cada cabecera y su valor. Si la cabecera es Cookie comprobar
+                #  el valor de cookie_counter para ver si ha llegado a MAX_ACCESOS.
+                
+                cabeceras = {}
+                for line in lines[1:]:
+                    if not line:
+                        break
+                    cabecera = line.split(": ")
+                    cabeceras[cabecera[0]] = cabecera[1]
 
-            cookie_counter = process_cookies(cabeceras)        
-            #  Si se ha llegado a MAX_ACCESOS devolver un Error "403 Forbidden"
-            if cookie_counter >= MAX_ACCESOS:
-                respuesta = 'HTTP/1.1 403 Forbidden\r\nContent-Type: text/html\r\n\r\n'
-                respuesta += '<html><head><title>403 Forbidden</title></head>'
-                respuesta += '<body><h1>403 Forbidden</h1></body></html>'
-                enviar_mensaje(cs, respuesta.encode())  
-                print("Motivo: Error 403 Forbidden")    
-                break
+                cookie_counter = process_cookies(cabeceras)        
+                #  Si se ha llegado a MAX_ACCESOS devolver un Error "403 Forbidden"
+                if cookie_counter >= MAX_ACCESOS:
+                    respuesta = 'HTTP/1.1 403 Forbidden\r\nContent-Type: text/html\r\n\r\n'
+                    respuesta += '<html><head><title>403 Forbidden</title></head>'
+                    respuesta += '<body><h1>403 Forbidden</h1></body></html>'
+                    enviar_mensaje(cs, respuesta.encode())  
+                    print("Motivo: Error 403 Forbidden")    
+                    break
 
-            # * Obtener el tamaño del recurso en bytes.
-            size = os.stat(abs_route).st_size
-            # * Extraer extensión para obtener el tipo de archivo. Necesario para la cabecera Content-Type
-            extension = abs_route.split(".")[1]
-            # * Preparar respuesta con código 200. Construir una respuesta que incluya: la línea de respuesta y
-            # las cabeceras Date, Server, Connection, Set-Cookie (para la cookie cookie_counter),
-            # Content-Length y Content-Type.
-            respuesta = "HTTP/1.1 200 OK\r\n"
-            respuesta += "Date: {}\r\n".format(datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT"))
-            respuesta += "Server:{}\r\n".format(os.name)
-            respuesta += "Connection: keep-alive\r\n"
-            respuesta += "Set-Cookie: cookie_counter={}; Max-Age={}\r\n".format(cookie_counter, MAX_AGE)
-            respuesta += "Content-Length: {}\r\n".format(size)
-            respuesta += "Content-Type: {}\r\n".format(filetypes.get(extension))
-            respuesta += "\r\n"
+
+                # * Obtener el tamaño del recurso en bytes.
+                size = os.stat(abs_route).st_size
+                # * Extraer extensión para obtener el tipo de archivo. Necesario para la cabecera Content-Type
+                extension = abs_route.split(".")[1]
+                # * Preparar respuesta con código 200. Construir una respuesta que incluya: la línea de respuesta y
+                # las cabeceras Date, Server, Connection, Set-Cookie (para la cookie cookie_counter),
+                # Content-Length y Content-Type.
+                respuesta = "HTTP/1.1 200 OK\r\n"
+                respuesta += "Date: {}\r\n".format(datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT"))
+                respuesta += "Server:{}\r\n".format(os.name)
+                respuesta += "Connection: keep-alive\r\n"
+                respuesta += "Set-Cookie: cookie_counter={}; Max-Age={}\r\n".format(cookie_counter, MAX_AGE)
+                respuesta += "Content-Length: {}\r\n".format(size)
+                respuesta += "Content-Type: {}\r\n".format(filetypes.get(extension))
+                respuesta += "\r\n"
+                
+                # * Leer y enviar el contenido del fichero a retornar en el cuerpo de la respuesta.
+                # * Se abre el fichero en modo lectura y modo binario
+                # * Se lee el fichero en bloques de BUFSIZE bytes (8KB)
+                # * Cuando ya no hay más información para leer, se corta el bucle
+                with open(abs_route, "rb") as f:
+                    if (os.stat(abs_route).st_size + len(respuesta) > BUFSIZE):
+                    #Envio con fragmentacion
+                        enviar_mensaje(cs, respuesta.encode())
+                        while (True):
+                            buff = f.read(BUFSIZE)
+                            if(not buff):
+                                break
+                            enviar_mensaje(cs, buff)
+                    else:
+                    #Envio normal   
+                        buff = f.read() 
+                        contenido = respuesta.encode() + buff 
+                        enviar_mensaje(cs, contenido) 
+                
+                print("\n\nRespuesta enviada: ")
+                print(respuesta) 
+            else:
+                
+                cabeceras = {}
+                diccionario_datos = {}
+                division = data.split('/r/n/r/n')
+                print("----------------------------------------------------------------------------------")
+                print(division[0])
+                print("-------------------------------------------------------------------------------------")
+                falso_get = division[0].split("/r/n")
+                for line in falso_get[1:]:
+                    if not line:
+                        break
+                    cabecera = line.split(": ")
+                    cabeceras[cabecera[0]] = cabecera[1]
+                
+                datos = division[1].split("&")
+                for dato in datos[0:]:
+                    if not dato:
+                        break
+                    aux = dato.split("=")
+                    diccionario_datos = [aux[0]] = aux[1]
+                
+                    
+              
             
-            # * Leer y enviar el contenido del fichero a retornar en el cuerpo de la respuesta.
-            # * Se abre el fichero en modo lectura y modo binario
-            # * Se lee el fichero en bloques de BUFSIZE bytes (8KB)
-            # * Cuando ya no hay más información para leer, se corta el bucle
-            with open(abs_route, "rb") as f:
-                if (os.stat(abs_route).st_size + len(respuesta) > BUFSIZE):
-                #Envio con fragmentacion
-                    enviar_mensaje(cs, respuesta.encode())
-                    while (True):
-                        buff = f.read(BUFSIZE)
-                        if(not buff):
-                            break
-                        enviar_mensaje(cs, buff)
-                else:
-                #Envio normal   
-                    buff = f.read() 
-                    contenido = respuesta.encode() + buff 
-                    enviar_mensaje(cs, contenido) 
-            print("\n\nRespuesta enviada: ")
-            print(respuesta)
         # * Si es por timeout, se cierra el socket tras el período de persistencia.
         else:
             # * NOTA: Si hay algún error, enviar una respuesta de error con una pequeña página HTML que informe del error.
