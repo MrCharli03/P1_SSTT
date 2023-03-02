@@ -16,7 +16,7 @@ import logging      # Para imprimir logs
 
 BUFSIZE = 8192  # Tamaño máximo del buffer que se puede utilizar
 # Timout para la conexión persistente //cambiar a 5 seconds para hacer pruebas
-TIMEOUT_CONNECTION = 100
+TIMEOUT_CONNECTION = 20
 MAX_ACCESOS = 10
 BACKLOG = 64
 MAX_AGE = 5 
