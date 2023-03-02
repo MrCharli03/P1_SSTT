@@ -16,7 +16,7 @@ import logging      # Para imprimir logs
 
 BUFSIZE = 8192  # Tamaño máximo del buffer que se puede utilizar
 # Timout para la conexión persistente //cambiar a 5 seconds para hacer pruebas
-TIMEOUT_CONNECTION = 20
+TIMEOUT_CONNECTION = 100
 MAX_ACCESOS = 10
 BACKLOG = 64
 MAX_AGE = 5 
@@ -83,7 +83,6 @@ def process_cookies(headers):
         else:
             cookie_value += 1
             return cookie_value
-
 
 def process_web_request(cs, webroot):
     """ Procesamiento principal de los mensajes recibidos.
@@ -182,6 +181,7 @@ def process_web_request(cs, webroot):
                 # * Preparar respuesta con código 200. Construir una respuesta que incluya: la línea de respuesta y
                 # las cabeceras Date, Server, Connection, Set-Cookie (para la cookie cookie_counter),
                 # Content-Length y Content-Type.
+                
                 respuesta = "HTTP/1.1 200 OK\r\n"
                 respuesta += "Date: {}\r\n".format(datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT"))
                 respuesta += "Server:{}\r\n".format(os.name)
@@ -227,7 +227,31 @@ def process_web_request(cs, webroot):
                         break
                     n = dato.split("=")
                     datos[n[0]] = n[1]
-                print(datos["email"])
+                respuesta = "HTTP/1.1 200 OK\r\n"
+                respuesta += "Content-Type: text/html\r\n\r\n"
+                #Compruebo que es del dominio um.es y el valor de la clave email no esta vacio y actua el servidor en consecuencia
+                if (len(datos["email"])!=0):
+                    if("um.es" in datos["email"]):
+                        respuesta += '<html><head><title>Validacion Correo</title></head>'
+                        respuesta += '<body><h1>Correo validado</h1></body></html>'
+                        enviar_mensaje(cs, respuesta.encode())
+                    else:
+                        respuesta += '<html><head><title>No Validado Correo</title></head>'
+                        respuesta += '<body><h1> El correo no se valido: no pertenece al dominio de la Universidad de Murcia</h1></body></html>'
+                        enviar_mensaje(cs, respuesta.encode())
+                    print("\n\nRespuesta enviada: ")
+                    print(respuesta+"\n") 
+                    break 
+                      
+                else:
+                    respuesta_err = 'HTTP/1.1 403 Forbidden\r\nContent-Type: text/html\r\n\r\n'
+                    respuesta_err += '<html><head><title>403 Forbidden</title></head>'
+                    respuesta_err += '<body><h1>403 Forbidden</h1></body></html>'
+                    enviar_mensaje(cs, respuesta_err.encode())  
+                    print("Motivo: Error 403 Forbidden")    
+                    break
+                
+                
               
             
         # * Si es por timeout, se cierra el socket tras el período de persistencia.
