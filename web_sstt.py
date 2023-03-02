@@ -248,7 +248,9 @@ def process_web_request(cs, webroot):
                     respuesta_err += '<html><head><title>403 Forbidden</title></head>'
                     respuesta_err += '<body><h1>403 Forbidden</h1></body></html>'
                     enviar_mensaje(cs, respuesta_err.encode())  
-                    print("Motivo: Error 403 Forbidden")    
+                    print("\nMotivo: Error 403 Forbidden")
+                    print("\n\nRespuesta enviada: ")
+                    print(respuesta_err+"\n") 
                     break
                 
                 
