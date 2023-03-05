@@ -16,10 +16,10 @@ import logging      # Para imprimir logs
 
 BUFSIZE = 8192  # Tamaño máximo del buffer que se puede utilizar
 # Timout para la conexión persistente //cambiar a 5 seconds para hacer pruebas
-TIMEOUT_CONNECTION = 20
+TIMEOUT_CONNECTION = 31
 MAX_ACCESOS = 10
 BACKLOG = 64
-MAX_AGE = 5 
+MAX_AGE = 120
 
 
 # Extensiones admitidas (extension, name in HTTP)
@@ -186,8 +186,9 @@ def process_web_request(cs, webroot):
                 respuesta += "Date: {}\r\n".format(datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT"))
                 respuesta += "Server:{}\r\n".format(os.name)
                 respuesta += "Connection: keep-alive\r\n"
-                respuesta += "Set-Cookie: cookie_counter={}; Max-Age={}\r\n".format(cookie_counter, MAX_AGE)
+                respuesta += "Set-Cookie: cookie_counter_8427={}; Max-Age={}\r\n".format(cookie_counter, MAX_AGE)
                 respuesta += "Content-Length: {}\r\n".format(size)
+                respuesta += "Keep-Alive: timeout={}, max={}\r\n".format(TIMEOUT_CONNECTION, MAX_ACCESOS)
                 respuesta += "Content-Type: {}\r\n".format(filetypes.get(extension))
                 respuesta += "\r\n"
                 
@@ -229,9 +230,13 @@ def process_web_request(cs, webroot):
                     datos[n[0]] = n[1]
                 respuesta = "HTTP/1.1 200 OK\r\n"
                 respuesta += "Content-Type: text/html\r\n\r\n"
+                respuesta += "Connection: keep-alive\r\n"
+                respuesta += "Keep-Alive: timeout={}, max={}\r\n".format(TIMEOUT_CONNECTION, MAX_ACCESOS)
+
                 #Compruebo que es del dominio um.es y el valor de la clave email no esta vacio y actua el servidor en consecuencia
                 if (len(datos["email"])!=0):
                     if("um.es" in datos["email"]):
+                        
                         respuesta += '<html><head><title>Validacion Correo</title></head>'
                         respuesta += '<body><h1>Correo validado</h1></body></html>'
                         enviar_mensaje(cs, respuesta.encode())
