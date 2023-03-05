@@ -111,6 +111,14 @@ def process_web_request(cs, webroot):
             # * Devuelve una lista con los atributos de las cabeceras.
             lines = data.split("\r\n")
             content_atributes = lines[0].split(" ")
+            
+            if len(content_atributes) != 3:
+                respuesta = 'HTTP/1.1 400 Bad Request\r\nContent-Type: text/html\r\n\r\n'
+                respuesta += '<html><head><title>400 Bad Request</title></head>'
+                respuesta += '<body><h1>400 Bad Request</h1></body></html>'
+                enviar_mensaje(cs, respuesta.encode())  
+                print("Motivo: Error 400 Bad Request") 
+                break
 
             # * Comprobar si la versión de HTTP es 1.1
             if content_atributes[2] != "HTTP/1.1":
@@ -163,6 +171,17 @@ def process_web_request(cs, webroot):
                     cabecera = line.split(": ")
                     cabeceras[cabecera[0]] = cabecera[1]
 
+                #Si no se ha incluido la cabecera Host devolver un Error 400 Bad Request
+
+                if not "Host":
+                    respuesta = 'HTTP/1.1 400 Bad Request\r\nContent-Type: text/html\r\n\r\n'
+                    respuesta += '<html><head><title>400 Bad Request</title></head>'
+                    respuesta += '<body><h1>400 Bad Request</h1></body></html>'
+                    enviar_mensaje(cs, respuesta.encode())  
+                    print("Motivo: Error 400 Bad Request") 
+                    break
+
+
                 cookie_counter = process_cookies(cabeceras)        
                 #  Si se ha llegado a MAX_ACCESOS devolver un Error "403 Forbidden"
                 if cookie_counter >= MAX_ACCESOS:
@@ -184,7 +203,7 @@ def process_web_request(cs, webroot):
                 
                 respuesta = "HTTP/1.1 200 OK\r\n"
                 respuesta += "Date: {}\r\n".format(datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT"))
-                respuesta += "Server:{}\r\n".format(os.name)
+                respuesta += "Server: servidor.nombreorganizacion8427\r\n"
                 respuesta += "Connection: keep-alive\r\n"
                 respuesta += "Set-Cookie: cookie_counter_8427={}; Max-Age={}\r\n".format(cookie_counter, MAX_AGE)
                 respuesta += "Content-Length: {}\r\n".format(size)
@@ -231,6 +250,7 @@ def process_web_request(cs, webroot):
                 respuesta = "HTTP/1.1 200 OK\r\n"
                 respuesta += "Content-Type: text/html\r\n\r\n"
                 respuesta += "Connection: keep-alive\r\n"
+                respuesta += "Content-Length: {}\r\n".format(size)
                 respuesta += "Keep-Alive: timeout={}, max={}\r\n".format(TIMEOUT_CONNECTION, MAX_ACCESOS)
 
                 #Compruebo que es del dominio um.es y el valor de la clave email no esta vacio y actua el servidor en consecuencia
