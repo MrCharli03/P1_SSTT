@@ -252,7 +252,7 @@ def process_web_request(cs, webroot):
                 if (len(datos["email"])!=0):
                     if("um.es" in datos["email"]):
                         respuesta = "HTTP/1.1 200 OK\r\n"
-                        respuesta += "Content-Type: text/html\r\n\r\n"
+                        respuesta += "Content-Type: text/html\r\n"
                         respuesta += "Connection: keep-alive\r\n"
                         respuesta += "Content-Length: {}\r\n".format(size)
                         respuesta += "Keep-Alive: timeout={}, max={}\r\n\r\n".format(TIMEOUT_CONNECTION, MAX_ACCESOS)
