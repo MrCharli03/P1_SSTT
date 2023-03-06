@@ -254,33 +254,34 @@ def process_web_request(cs, webroot):
                         break
                     n = dato.split("=")
                     datos[n[0]] = n[1]
-                respuesta = "HTTP/1.1 200 OK\r\n"
-                respuesta += "Content-Type: text/html\r\n\r\n"
-                respuesta += "Connection: keep-alive\r\n"
-                respuesta += "Content-Length: {}\r\n".format(size)
-                respuesta += "Keep-Alive: timeout={}, max={}\r\n".format(TIMEOUT_CONNECTION, MAX_ACCESOS)
 
                 #Compruebo que es del dominio um.es y el valor de la clave email no esta vacio y actua el servidor en consecuencia
                 if (len(datos["email"])!=0):
                     if("um.es" in datos["email"]):
-                        
+                        respuesta = "HTTP/1.1 200 OK\r\n"
+                        respuesta += "Content-Type: text/html\r\n"
+                        respuesta += "Connection: keep-alive\r\n"
+                        respuesta += "Content-Length: {}\r\n".format(size)
+                        respuesta += "Keep-Alive: timeout={}, max={}\r\n\r\n".format(TIMEOUT_CONNECTION, MAX_ACCESOS)
                         respuesta += '<html><head><title>Validacion Correo</title></head>'
                         respuesta += '<body><h1>Correo validado</h1></body></html>'
                         enviar_mensaje(cs, respuesta.encode())
                     else:
-                        respuesta += '<html><head><title>No Validado Correo</title></head>'
-                        respuesta += '<body><h1> El correo no se valido: no pertenece al dominio de la Universidad de Murcia</h1></body></html>'
-                        enviar_mensaje(cs, respuesta.encode())
+                        respuesta_err = 'HTTP/1.1 401 Unauthorized\r\nContent-Type: text/html\r\n\r\n'
+                        respuesta_err += '<html><head><title>401 Unauthorized</title></head>'
+                        respuesta_err += '<body><h1>401 Unauthorized</h1></body></html>'
+                        enviar_mensaje(cs, respuesta_err.encode())  
+                        print("\nMotivo: Error 401 Unauthorized")
                     print("\n\nRespuesta enviada: ")
                     print(respuesta+"\n") 
                     break 
                       
                 else:
-                    respuesta_err = 'HTTP/1.1 403 Forbidden\r\nContent-Type: text/html\r\n\r\n'
-                    respuesta_err += '<html><head><title>403 Forbidden</title></head>'
-                    respuesta_err += '<body><h1>403 Forbidden</h1></body></html>'
+                    respuesta_err = 'HTTP/1.1 400 Bad Request\r\nContent-Type: text/html\r\n\r\n'
+                    respuesta_err += '<html><head><title>400 Bad Request</title></head>'
+                    respuesta_err += '<body><h1>400 Bad Request</h1></body></html>'
                     enviar_mensaje(cs, respuesta_err.encode())  
-                    print("\nMotivo: Error 403 Forbidden")
+                    print("\nMotivo: Error 400 Bad Request")
                     print("\n\nRespuesta enviada: ")
                     print(respuesta_err+"\n") 
                     break
