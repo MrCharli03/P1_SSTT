@@ -54,6 +54,24 @@ def cerrar_conexion(cs):
     cs.close()
     pass 
 
+#Esta funcion envia una pagina de error hacia el cliente.
+def send_error(ruta, msg, sckt):
+    
+    size = os.stat(ruta).st_size
+    extension = ruta.split(".")[1]
+    
+    file=os.path.basename(ruta).split(".")  
+    file = file[len(file)-1]
+    
+    respuesta = msg + "\r\n"
+    respuesta += "Date: {}\r\n".format(datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT"))
+    respuesta += "Server: servidor.nombreorganizacion8427\r\n"
+    respuesta += "Content-Length: {}\r\n".format(size)
+    respuesta += "Content-Type: {}\r\n".format(filetypes.get(extension))
+    respuesta += "Connection: close\r\n\r\n"
+    enviar_mensaje(sckt, respuesta.encode()) 
+
+
 def process_cookies(headers):
     """ Esta función procesa la cookie cookie_counter
         1. Se analizan las cabeceras en headers para buscar la cabecera Cookie
@@ -113,30 +131,19 @@ def process_web_request(cs, webroot):
             content_atributes = lines[0].split(" ")
             
             if len(content_atributes) != 3:
-                respuesta = 'HTTP/1.1 400 Bad Request\r\nContent-Type: text/html\r\n\r\n'
-                respuesta += '<html><head><title>400 Bad Request</title></head>'
-                respuesta += '<body><h1>400 Bad Request</h1></body></html>'
-                enviar_mensaje(cs, respuesta.encode())  
+                send_error("./errors/404.html", "HTTP/1.1 404 Method Not Allowed", cs) 
                 print("Motivo: Error 400 Bad Request") 
                 break
 
             # * Comprobar si la versión de HTTP es 1.1
             if content_atributes[2] != "HTTP/1.1":
-                respuesta = "HTTP/1.1 505 HTTP Version Not Supported\r\nContent-Type: text/html\r\n\r\n"
-                respuesta += '<html><head><title>505 HTTP Version Not Supported</title></head>'
-                respuesta += '<body><h1>505 HTTP Version Not Supported</h1></body></html>'
-                enviar_mensaje(cs, respuesta.encode())
-
+                send_error("./errors/505.html", "HTTP/1.1 505 HTTP Version Not Supported", cs) 
                 print("Motivo: Error 505 HTTP Version Not Supported")
                 break
 
             # * Comprobar si es un método GET o POST. Si no devolver un error Error 405 "Method Not Allowed".
             if content_atributes[0] != "GET" and content_atributes[0] != "POST":
-                respuesta = 'HTTP/1.1 405 Method Not Allowed\r\nContent-Type: text/html\r\n\r\n'
-                respuesta += '<html><head><title>405 Method Not Allowed</title></head>'
-                respuesta += '<body><h1>405 Method Not Allowed</h1></body></html>'
-                enviar_mensaje(cs, respuesta.encode()) 
-                
+                send_error("./errors/405.html", "HTTP/1.1 405 Method Not Allowed", cs)
                 print("Motivo: Error 405 Method Not Allowed")    
                 break
 
