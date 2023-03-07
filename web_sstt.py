@@ -19,7 +19,8 @@ BUFSIZE = 8192  # Tamaño máximo del buffer que se puede utilizar
 TIMEOUT_CONNECTION = 31
 MAX_ACCESOS = 10
 BACKLOG = 64
-MAX_AGE = 120
+MAX_AGE = 10
+
 
 
 # Extensiones admitidas (extension, name in HTTP)
@@ -120,12 +121,14 @@ def process_web_request(cs, webroot):
         # sin recibir ningún mensaje o hay datos. Se utiliza select.select
         rsublist, wsublist, xsublist = select.select(rlist, wlist, xlist, TIMEOUT_CONNECTION)
         
+
         print("Cliente: " + str(cs.getsockname()[0])+" : "+str(cs.getsockname()[1])) 
         # * Si no es por timeout y hay datos en el socket cs.
         if rsublist:
             # * Leer los datos con recv.
             print("\n\nPETICION RECIBIDA: ")
             data = recibir_mensaje(cs)
+
             if not data:
                 break
             print(data) 
@@ -205,11 +208,12 @@ def process_web_request(cs, webroot):
                 respuesta = "HTTP/1.1 200 OK\r\n"
                 respuesta += "Date: {}\r\n".format(datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT"))
                 respuesta += "Server: servidor.nombreorganizacion8427\r\n"
-                respuesta += "Connection: keep-alive\r\n"
                 respuesta += "Set-Cookie: cookie_counter_8427={}; Max-Age={}\r\n".format(cookie_counter, MAX_AGE)
                 respuesta += "Content-Length: {}\r\n".format(size)
                 respuesta += "Keep-Alive: timeout={}, max={}\r\n".format(TIMEOUT_CONNECTION, MAX_ACCESOS)
                 respuesta += "Content-Type: {}\r\n".format(filetypes.get(extension))
+                respuesta += "Connection: keep-alive\r\n"
+
                 respuesta += "\r\n"
                 
                 # * Leer y enviar el contenido del fichero a retornar en el cuerpo de la respuesta.
