@@ -114,7 +114,8 @@ def process_web_request(cs, webroot):
     rlist = [cs]
     wlist = []
     xlist = []
-
+    cookie_counter = 0
+    persistencia = 0
     # Bucle para esperar hasta que lleguen datos en la red a través del socket cs con select()
     while (True):
         # Se comprueba si hay que cerrar la conexión por exceder TIMEOUT_CONNECTION segundos
@@ -187,11 +188,12 @@ def process_web_request(cs, webroot):
                     send_error("./errores/400.html", "HTTP/1.1 400 Bad Request", cs) 
                     print("Motivo: Error 400 Bad Request") 
                     break
-
-
-                cookie_counter = process_cookies(cabeceras)        
+                persistencia = persistencia + 1
+                #aumentamos las cookies cada vez que se accede al index.html
+                if (url == "/index.html"):
+                    cookie_counter = process_cookies(cabeceras)        
                 #  Si se ha llegado a MAX_ACCESOS devolver un Error "403 Forbidden"
-                if cookie_counter >= MAX_ACCESOS:   
+                if (cookie_counter >= MAX_ACCESOS) or (persistencia>MAX_ACCESOS):   
                     send_error("./errores/403.html", "HTTP/1.1 403 Forbidden", cs)
                     print("Motivo: Error 403 Forbidden")    
                     break
@@ -208,6 +210,7 @@ def process_web_request(cs, webroot):
                 respuesta = "HTTP/1.1 200 OK\r\n"
                 respuesta += "Date: {}\r\n".format(datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT"))
                 respuesta += "Server: servidor.nombreorganizacion8427\r\n"
+                respuesta += "Connection: keep-alive\r\n"           
                 respuesta += "Set-Cookie: cookie_counter_8427={}; Max-Age={}\r\n".format(cookie_counter, MAX_AGE)
                 respuesta += "Content-Length: {}\r\n".format(size)
                 respuesta += "Keep-Alive: timeout={}, max={}\r\n".format(TIMEOUT_CONNECTION, MAX_ACCESOS)
@@ -234,7 +237,6 @@ def process_web_request(cs, webroot):
                         buff = f.read() 
                         contenido = respuesta.encode() + buff 
                         enviar_mensaje(cs, contenido) 
-                
                 print("\n\nRespuesta enviada: ")
                 print(respuesta) 
             else:
@@ -274,16 +276,12 @@ def process_web_request(cs, webroot):
                     else:
                         send_error("./errores/401.html", "HTTP/1.1 401 Unauthorized", cs) 
                         print("\nMotivo: Error 401 Unauthorized")
-                    break 
+                        break 
                       
                 else:
                     send_error("./errores/400.html", "HTTP/1.1 400 Bad Request", cs) 
                     print("Motivo: Error 400 Bad Request") 
-                    break
-                
-                
-              
-            
+                    break    
         # * Si es por timeout, se cierra el socket tras el período de persistencia.
         else:
             # * NOTA: Si hay algún error, enviar una respuesta de error con una pequeña página HTML que informe del error.
@@ -344,7 +342,7 @@ def main():
                     process_web_request(client_shocket, args.webroot)
                     print("\n\nSocket del Cliente cerrado: " + str(client_shocket.getsockname()[0])+" : "+str(client_shocket.getsockname()[1]))
                     cerrar_conexion(client_shocket)    
-                    exit(0)      
+                    sys.exit(-1)          
                 else:
                     cerrar_conexion(client_shocket)
 
