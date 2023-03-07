@@ -54,6 +54,28 @@ def cerrar_conexion(cs):
     cs.close()
     pass 
 
+#Esta funcion envia una pagina de error hacia el cliente.
+def send_error(ruta, msg, sckt):
+    
+    size = os.stat(ruta).st_size
+    extension = ruta.split(".")[1]
+    
+    file=os.path.basename(ruta).split(".")  
+    file = file[len(file)-1]
+    
+    respuesta = msg + "\r\n"
+    respuesta += "Date: {}\r\n".format(datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT"))
+    respuesta += "Server: servidor.nombreorganizacion8427\r\n"
+    respuesta += "Content-Length: {}\r\n".format(size)
+    respuesta += "Content-Type: {}\r\n".format(filetypes.get(extension))
+    respuesta += "Connection: close\r\n\r\n"
+    
+    with open(ruta, "rb") as f:
+        buff = f.read() 
+        contenido = respuesta.encode() + buff 
+        enviar_mensaje(sckt, contenido)
+
+
 def process_cookies(headers):
     """ Esta función procesa la cookie cookie_counter
         1. Se analizan las cabeceras en headers para buscar la cabecera Cookie
@@ -113,30 +135,19 @@ def process_web_request(cs, webroot):
             content_atributes = lines[0].split(" ")
             
             if len(content_atributes) != 3:
-                respuesta = 'HTTP/1.1 400 Bad Request\r\nContent-Type: text/html\r\n\r\n'
-                respuesta += '<html><head><title>400 Bad Request</title></head>'
-                respuesta += '<body><h1>400 Bad Request</h1></body></html>'
-                enviar_mensaje(cs, respuesta.encode())  
+                send_error("./errores/400.html", "HTTP/1.1 400 Bad Request", cs) 
                 print("Motivo: Error 400 Bad Request") 
                 break
 
             # * Comprobar si la versión de HTTP es 1.1
             if content_atributes[2] != "HTTP/1.1":
-                respuesta = "HTTP/1.1 505 HTTP Version Not Supported\r\nContent-Type: text/html\r\n\r\n"
-                respuesta += '<html><head><title>505 HTTP Version Not Supported</title></head>'
-                respuesta += '<body><h1>505 HTTP Version Not Supported</h1></body></html>'
-                enviar_mensaje(cs, respuesta.encode())
-
+                send_error("./errores/505.html", "HTTP/1.1 505 HTTP Version Not Supported", cs) 
                 print("Motivo: Error 505 HTTP Version Not Supported")
                 break
 
             # * Comprobar si es un método GET o POST. Si no devolver un error Error 405 "Method Not Allowed".
             if content_atributes[0] != "GET" and content_atributes[0] != "POST":
-                respuesta = 'HTTP/1.1 405 Method Not Allowed\r\nContent-Type: text/html\r\n\r\n'
-                respuesta += '<html><head><title>405 Method Not Allowed</title></head>'
-                respuesta += '<body><h1>405 Method Not Allowed</h1></body></html>'
-                enviar_mensaje(cs, respuesta.encode()) 
-                
+                send_error("./errores/405.html", "HTTP/1.1 405 Method Not Allowed", cs)
                 print("Motivo: Error 405 Method Not Allowed")    
                 break
 
@@ -153,11 +164,7 @@ def process_web_request(cs, webroot):
                 # * Comprobar que el recurso (fichero) existe, si no devolver Error 404 "Not found"
                 
                 if not os.path.isfile(abs_route):
-                    
-                    respuesta = 'HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\n'
-                    respuesta += '<html><head><title>404 Not Found</title></head>'
-                    respuesta += '<body><h1>404 Not Found</h1></body></html>'
-                    enviar_mensaje(cs, respuesta.encode())  
+                    send_error("./errores/404.html", "HTTP/1.1 404 Not Found", cs)
                     print("Motivo: Error 404 Not Found") 
                     break
                     
@@ -174,21 +181,15 @@ def process_web_request(cs, webroot):
                 #Si no se ha incluido la cabecera Host devolver un Error 400 Bad Request
 
                 if not "Host":
-                    respuesta = 'HTTP/1.1 400 Bad Request\r\nContent-Type: text/html\r\n\r\n'
-                    respuesta += '<html><head><title>400 Bad Request</title></head>'
-                    respuesta += '<body><h1>400 Bad Request</h1></body></html>'
-                    enviar_mensaje(cs, respuesta.encode())  
+                    send_error("./errores/400.html", "HTTP/1.1 400 Bad Request", cs) 
                     print("Motivo: Error 400 Bad Request") 
                     break
 
 
                 cookie_counter = process_cookies(cabeceras)        
                 #  Si se ha llegado a MAX_ACCESOS devolver un Error "403 Forbidden"
-                if cookie_counter >= MAX_ACCESOS:
-                    respuesta = 'HTTP/1.1 403 Forbidden\r\nContent-Type: text/html\r\n\r\n'
-                    respuesta += '<html><head><title>403 Forbidden</title></head>'
-                    respuesta += '<body><h1>403 Forbidden</h1></body></html>'
-                    enviar_mensaje(cs, respuesta.encode())  
+                if cookie_counter >= MAX_ACCESOS:   
+                    send_error("./errores/403.html", "HTTP/1.1 403 Forbidden", cs)
                     print("Motivo: Error 403 Forbidden")    
                     break
 
@@ -251,32 +252,29 @@ def process_web_request(cs, webroot):
                 #Compruebo que es del dominio um.es y el valor de la clave email no esta vacio y actua el servidor en consecuencia
                 if (len(datos["email"])!=0):
                     if("um.es" in datos["email"]):
+                        ruta="./accion_form.html"
+                        size = os.stat(ruta).st_size
+                        extension = ruta.split(".")[1]
                         respuesta = "HTTP/1.1 200 OK\r\n"
                         respuesta += "Content-Type: text/html\r\n"
                         respuesta += "Connection: keep-alive\r\n"
                         respuesta += "Content-Length: {}\r\n".format(size)
                         respuesta += "Keep-Alive: timeout={}, max={}\r\n\r\n".format(TIMEOUT_CONNECTION, MAX_ACCESOS)
-                        respuesta += '<html><head><title>Validacion Correo</title></head>'
-                        respuesta += '<body><h1>Correo validado</h1></body></html>'
-                        enviar_mensaje(cs, respuesta.encode())
+                        with open(ruta, "rb") as f:
+                            buff = f.read() 
+                            contenido = respuesta.encode() + buff 
+                            enviar_mensaje(cs, contenido)
+                        print("\n\nRespuesta enviada: ")
+                        print(respuesta+"\n") 
+                        
                     else:
-                        respuesta_err = 'HTTP/1.1 401 Unauthorized\r\nContent-Type: text/html\r\n\r\n'
-                        respuesta_err += '<html><head><title>401 Unauthorized</title></head>'
-                        respuesta_err += '<body><h1>401 Unauthorized</h1></body></html>'
-                        enviar_mensaje(cs, respuesta_err.encode())  
+                        send_error("./errores/401.html", "HTTP/1.1 401 Unauthorized", cs) 
                         print("\nMotivo: Error 401 Unauthorized")
-                    print("\n\nRespuesta enviada: ")
-                    print(respuesta+"\n") 
                     break 
                       
                 else:
-                    respuesta_err = 'HTTP/1.1 400 Bad Request\r\nContent-Type: text/html\r\n\r\n'
-                    respuesta_err += '<html><head><title>400 Bad Request</title></head>'
-                    respuesta_err += '<body><h1>400 Bad Request</h1></body></html>'
-                    enviar_mensaje(cs, respuesta_err.encode())  
-                    print("\nMotivo: Error 400 Bad Request")
-                    print("\n\nRespuesta enviada: ")
-                    print(respuesta_err+"\n") 
+                    send_error("./errores/400.html", "HTTP/1.1 400 Bad Request", cs) 
+                    print("Motivo: Error 400 Bad Request") 
                     break
                 
                 
