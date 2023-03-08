@@ -191,9 +191,10 @@ def process_web_request(cs, webroot):
                 persistencia = persistencia + 1
                 #aumentamos las cookies cada vez que se accede al index.html
                 if (url == "/index.html"):
-                    cookie_counter = process_cookies(cabeceras)        
+                    cookie_counter = process_cookies(cabeceras)
+                            
                 #  Si se ha llegado a MAX_ACCESOS devolver un Error "403 Forbidden"
-                if (cookie_counter >= MAX_ACCESOS) or (persistencia>=MAX_ACCESOS):   
+                if (cookie_counter >= MAX_ACCESOS) or (persistencia >= MAX_ACCESOS):   
                     send_error("./errores/403.html", "HTTP/1.1 403 Forbidden", cs)
                     print("Motivo: Error 403 Forbidden")    
                     break
