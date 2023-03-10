@@ -19,7 +19,7 @@ BUFSIZE = 8192  # Tamaño máximo del buffer que se puede utilizar
 TIMEOUT_CONNECTION = 31
 MAX_ACCESOS = 10
 BACKLOG = 64
-MAX_AGE = 10
+MAX_AGE = 120
 
 
 
